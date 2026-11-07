@@ -1,0 +1,3 @@
+[general]
+# Reduces the HTML size without changing how a browser renders it.
+whitespace = "minimize"

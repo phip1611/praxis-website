@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#ffffff">
+    <title>{{ layout.title }}</title>
+    <meta name="description" content="{{ layout.description }}">
+    <meta name="robots" content="{{ layout.robots }}">
+    <link rel="stylesheet" href="{{ layout.assets.style }}">
+    <link rel="icon" href="{{ layout.assets.icon_32 }}" sizes="32x32">
+    <link rel="icon" href="{{ layout.assets.icon_192 }}" sizes="192x192">
+    <link rel="apple-touch-icon" href="{{ layout.assets.apple_touch }}">
+    <meta name="msapplication-TileImage" content="{{ layout.assets.tile }}">
+  </head>
+  <body>
+    <a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
+    <header class="site-header">
+      <div class="site-branding">
+        {%- if layout.site_title_is_heading %}
+          <h1 class="site-title"><a href="/" rel="home">{{ layout.site_name }}</a></h1>
+        {%- else %}
+          <p class="site-title"><a href="/" rel="home">{{ layout.site_name }}</a></p>
+        {%- endif %}
+        <p class="site-tagline">– {{ layout.tagline }}</p>
+      </div>
+      <nav class="site-nav" aria-label="Hauptmenü">
+        <ul>
+          {%- for link in layout.nav %}
+            <li>
+              <a
+                href="{{ link.href }}"
+                {%- if link.current %} aria-current="page"{% endif %}
+                {%- if link.privacy_policy %} rel="privacy-policy"{% endif %}>{{ link.label }}</a>
+            </li>
+          {%- endfor %}
+        </ul>
+      </nav>
+    </header>
+    <main id="inhalt" class="site-content">
+      {%- block content %}{% endblock %}
+    </main>
+    <footer class="site-footer">
+      <p>
+        {{ layout.site_name }} · {{ layout.address }} · Telefon
+        <a href="tel:{{ layout.phone.international }}">{{ layout.phone.display }}</a>
+      </p>
+    </footer>
+  </body>
+</html>
