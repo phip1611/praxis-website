@@ -1,0 +1,51 @@
+name: Rust
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [ main ]
+
+# Newer pushes to a PR cancel its outdated runs. Every push to main keeps
+# its result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build and test (${{ matrix.runner }}, ${{ matrix.rust }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The service only targets Linux.
+        runner: [ ubuntu-latest, ubuntu-24.04-arm ]
+        rust:
+          - stable
+          - 1.97.0 # MSRV
+        include:
+          - runner: ubuntu-latest
+            rust: nightly
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          # Only main writes caches, so PRs don't evict each other's.
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Build
+        run: cargo build --all-targets --locked
+      - name: Run tests
+        run: cargo test --all-targets --locked
+      - name: Build (release)
+        if: matrix.rust == 'stable'
+        run: cargo build --release --locked
