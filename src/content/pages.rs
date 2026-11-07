@@ -61,8 +61,6 @@ pub(crate) struct PageSpec {
     pub(crate) heading: String,
     /// The description for search results and previews.
     pub(crate) description: String,
-    /// Whether the WordPress site announced a reading time for this page.
-    pub(crate) reading_time: bool,
     /// The content.
     pub(crate) body: PageBody,
 }
