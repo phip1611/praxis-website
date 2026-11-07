@@ -16,6 +16,7 @@
 //! - [`token`]: Random secrets and constant-time comparison.
 //! - [`password`]: Argon2id hashing and verification.
 //! - [`credentials`]: The accounts file and account lookup.
+//! - [`session`]: Server-side sessions with idle and absolute timeouts.
 //! - [`csrf`]: Per-session tokens for state-changing requests.
 //! - [`origin`]: Rejects cross-origin state-changing requests.
 //! - [`headers`]: Security headers such as the Content Security Policy.
@@ -40,6 +41,11 @@ pub(crate) mod origin;
 )]
 pub(crate) mod password;
 pub(crate) mod sanitize;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
+pub(crate) mod session;
 #[cfg_attr(
     not(test),
     expect(dead_code, reason = "used by code that a later commit adds")

@@ -3,6 +3,7 @@
 //! Random secrets and constant-time comparison.
 
 use crate::hex;
+use sha2::{Digest, Sha256};
 use std::fmt::{self, Debug, Formatter};
 use subtle::ConstantTimeEq;
 use thiserror::Error;
@@ -62,6 +63,14 @@ pub(super) fn constant_time_eq(left: &[u8], right: &[u8]) -> bool {
     left.ct_eq(right).into()
 }
 
+/// Returns the SHA-256 digest of `token`.
+///
+/// The session table only stores digests. So a memory disclosure doesn't reveal
+/// usable tokens, and lookups don't compare secrets directly.
+pub(super) fn digest(token: &str) -> [u8; 32] {
+    Sha256::digest(token.as_bytes()).into()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -111,5 +120,17 @@ mod tests {
         assert!(constant_time_eq(b"same", b"same"));
         assert!(!constant_time_eq(b"same", b"sane"));
         assert!(!constant_time_eq(b"same", b"same "));
+    }
+
+    /// The digest is SHA-256, verified with a published test vector.
+    #[test]
+    fn digest_matches_sha256_test_vector() {
+        let expected = [
+            0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde, 0x5d, 0xae,
+            0x22, 0x23, 0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61,
+            0xf2, 0x00, 0x15, 0xad,
+        ];
+
+        assert_eq!(digest("abc"), expected);
     }
 }
