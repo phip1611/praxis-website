@@ -1,15 +1,25 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Renders the public pages.
+//! Renders the public snapshot of all pages.
 
 use crate::content::news::NewsDocument;
 use crate::content::pages::{HOME_PATH, PageImage, PageSpec, home_title};
 use crate::content::site::SITE;
+use crate::delivery::cached::{CachePolicy, CachedResponse, Compression};
+use crate::delivery::snapshot::Snapshot;
 use crate::render::layout::{Layout, OpenGraph, OpenGraphImage, OpenGraphKind, ROBOTS_PUBLIC};
-use crate::render::templates::{BusinessCardImages, HomeTemplate, PageTemplate};
+use crate::render::templates::{BusinessCardImages, HomeTemplate, NotFoundTemplate, PageTemplate};
 use crate::render::{RenderError, SiteRenderer};
 use askama::Template;
+use axum::http::StatusCode;
+use std::collections::HashMap;
 use std::iter;
+use std::sync::Arc;
+use std::time::Instant;
+use tracing::debug;
+
+/// The `Content-Type` of HTML pages.
+const HTML: &str = "text/html; charset=utf-8";
 
 /// The smaller variants of the business card as `(file name suffix, width)`.
 /// The full size is the business card of `content/site.toml`.
@@ -35,6 +45,47 @@ struct PublicPage<'a> {
 }
 
 impl SiteRenderer {
+    /// Renders and compresses all public responses.
+    ///
+    /// CPU-intensive: don't call it on the async runtime.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`RenderError`] if a template fails.
+    pub(crate) fn render_site(&self, news: &NewsDocument) -> Result<Snapshot, RenderError> {
+        let start = Instant::now();
+        let mut routes: HashMap<String, Arc<CachedResponse>> = self
+            .assets
+            .routes()
+            .map(|(path, response)| (path.to_string(), Arc::clone(response)))
+            .collect();
+        let mut add = |path: &str, content_type, body: String| {
+            let response = CachedResponse::new(
+                StatusCode::OK,
+                content_type,
+                CachePolicy::Revalidate,
+                body.into_bytes(),
+                Compression::Precompress,
+            );
+            routes.insert(path.to_string(), Arc::new(response));
+        };
+
+        add(HOME_PATH, HTML, self.render_home(news)?);
+        for page in &SITE.pages {
+            add(&page.path, HTML, self.render_page(page)?);
+        }
+
+        let not_found = CachedResponse::new(
+            StatusCode::NOT_FOUND,
+            HTML,
+            CachePolicy::Revalidate,
+            self.render_not_found()?.into_bytes(),
+            Compression::Precompress,
+        );
+        debug!(elapsed = ?start.elapsed(), "rendered site");
+        Ok(Snapshot::new(routes, Arc::new(not_found)))
+    }
+
     /// Renders the start page.
     fn render_home(&self, news: &NewsDocument) -> Result<String, RenderError> {
         let modified = news.modified_at.to_string();
@@ -74,6 +125,12 @@ impl SiteRenderer {
             card: &self.business_card(),
         }
         .render()?)
+    }
+
+    /// Renders the page for unknown paths.
+    fn render_not_found(&self) -> Result<String, RenderError> {
+        let layout = self.private_layout("Seite nicht gefunden");
+        Ok(NotFoundTemplate { layout: &layout }.render()?)
     }
 
     /// Returns the frame of a public page with all search engine metadata.
@@ -132,11 +189,29 @@ mod tests {
     use super::*;
     use crate::delivery::assets::AssetCatalog;
     use crate::test_support::test_config;
-    use std::sync::Arc;
 
     /// Creates a renderer for the test configuration.
     fn renderer() -> SiteRenderer {
         SiteRenderer::new(&test_config(), Arc::new(AssetCatalog::new()))
+    }
+
+    /// The site has the start page, all fixed pages, and assets.
+    #[test]
+    fn render_site_contains_all_routes() {
+        let snapshot = renderer()
+            .render_site(&NewsDocument::seed())
+            .expect("rendering should succeed");
+
+        let mut expected = vec![HOME_PATH, "/favicon.ico"];
+        expected.extend(SITE.pages.iter().map(|page| page.path.as_str()));
+        for path in expected {
+            assert!(snapshot.get(path).is_some(), "{path}");
+        }
+        assert!(
+            snapshot
+                .paths()
+                .any(|path| path.starts_with("/assets/style."))
+        );
     }
 
     /// Every business card variant exists, so the srcset has no broken URL.

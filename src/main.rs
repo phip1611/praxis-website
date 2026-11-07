@@ -19,7 +19,10 @@ mod delivery;
 )]
 mod hex;
 mod logging;
-#[expect(dead_code, reason = "used by code that a later commit adds")]
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
 mod render;
 mod security;
 #[cfg(test)]
