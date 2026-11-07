@@ -18,6 +18,7 @@
 //! - [`token`]: Random secrets and constant-time comparison.
 //! - [`password`]: Argon2id hashing and verification.
 //! - [`credentials`]: The accounts file and account lookup.
+//! - [`client_ip`]: The client address behind the reverse proxy.
 //! - [`throttle`]: Limits failed logins per client and per account.
 //! - [`session`]: Server-side sessions with idle and absolute timeouts.
 //! - [`authenticator`]: The login flow, combining the parts above.
@@ -28,6 +29,11 @@
 //! - [`sanitize`]: The allowlist for user-provided HTML.
 
 pub(crate) mod authenticator;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
+pub(crate) mod client_ip;
 pub(crate) mod cookie;
 pub(crate) mod credentials;
 mod csrf;
