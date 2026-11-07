@@ -1,1 +1,3 @@
 /target
+# Local state of "cargo dev".
+/.dev-state

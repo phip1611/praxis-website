@@ -3,8 +3,11 @@
 //! Starts and stops the HTTP server.
 
 use crate::app::{AppState, StartupError};
+use crate::clock::SystemClock;
 use crate::config::Config;
 use crate::web;
+use std::fs;
+use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::signal;
 use tracing::info;
@@ -15,8 +18,16 @@ use tracing::info;
 ///
 /// Returns [`StartupError`] if the service can't start or the listener fails.
 pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
+    fs::create_dir_all(&config.state_dir).map_err(|source| StartupError::Io {
+        context: format!(
+            "can't create state directory {}",
+            config.state_dir.display()
+        ),
+        source,
+    })?;
     info!(
         public_url = config.base_url.origin(),
+        state_dir = %config.state_dir.display(),
         analytics = config.analytics.is_some(),
         "starting praxis-website {}",
         env!("CARGO_PKG_VERSION")
@@ -24,7 +35,7 @@ pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
 
     let bind = config.bind;
     let dev = config.dev;
-    let state = AppState::new(config)?;
+    let state = AppState::new(config, Arc::new(SystemClock))?;
     let base = state.config.base_url.clone();
     let listener = TcpListener::bind(bind)
         .await

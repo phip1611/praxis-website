@@ -3,11 +3,12 @@
 //! The command-line interface.
 //!
 //! Every option can also be set with an environment variable, which suits
-//! systemd units.
+//! systemd units. `STATE_DIRECTORY` is set by systemd's `StateDirectory=`.
 
 use crate::config::{BaseUrl, MatomoUrl};
 use clap::{Args, Parser, Subcommand};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::path::PathBuf;
 
 /// The default listen address. Only reachable locally, as the service runs
 /// behind a reverse proxy.
@@ -43,6 +44,10 @@ pub(crate) struct ServeArgs {
     #[arg(long, env = "PRAXIS_BASE_URL", value_parser = BaseUrl::parse)]
     pub(crate) base_url: BaseUrl,
 
+    /// The directory for the access statistics.
+    #[arg(long, env = "STATE_DIRECTORY")]
+    pub(crate) state_dir: PathBuf,
+
     /// The URL of the Matomo installation, e.g., `https://stats.example.com/`.
     #[arg(
         long,
@@ -77,6 +82,8 @@ mod tests {
         "serve",
         "--base-url",
         "https://praxis.test",
+        "--state-dir",
+        "/state",
     ];
 
     /// The clap definition is consistent (no conflicting names etc.).
@@ -133,7 +140,16 @@ mod tests {
     #[test]
     fn serve_requires_explicit_settings() {
         assert_eq!(
-            parse_error(&["praxis-website", "serve"]),
+            parse_error(&["praxis-website", "serve", "--state-dir", "/state"]),
+            ErrorKind::MissingRequiredArgument
+        );
+        assert_eq!(
+            parse_error(&[
+                "praxis-website",
+                "serve",
+                "--base-url",
+                "https://praxis.test"
+            ]),
             ErrorKind::MissingRequiredArgument
         );
     }

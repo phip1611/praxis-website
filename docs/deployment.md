@@ -8,15 +8,17 @@ same host that terminates TLS.
 ## Configuration
 
 Run the binary with these environment variables (or the flags of
-`praxis-website --help`), ideally as a systemd service with `DynamicUser=`.
+`praxis-website --help`), ideally as a systemd service with `DynamicUser=`
+and `StateDirectory=`.
 
-| Variable                | Default          | Purpose                           |
-|-------------------------|------------------|-----------------------------------|
-| `PRAXIS_BASE_URL`       | required         | Public URL for canonical links    |
-| `PRAXIS_BIND`           | `127.0.0.1:8080` | Listen address                    |
-| `PRAXIS_MATOMO_URL`     | off              | Matomo installation for analytics |
-| `PRAXIS_MATOMO_SITE_ID` | off              | Matomo site ID                    |
-| `RUST_LOG`              | `info`           | Log filter, e.g., `debug`         |
+| Variable                | Default                  | Purpose                           |
+|-------------------------|--------------------------|-----------------------------------|
+| `PRAXIS_BASE_URL`       | required                 | Public URL for canonical links    |
+| `PRAXIS_BIND`           | `127.0.0.1:8080`         | Listen address                    |
+| `STATE_DIRECTORY`       | required, set by systemd | Where the state files live        |
+| `PRAXIS_MATOMO_URL`     | off                      | Matomo installation for analytics |
+| `PRAXIS_MATOMO_SITE_ID` | off                      | Matomo site ID                    |
+| `RUST_LOG`              | `info`                   | Log filter, e.g., `debug`         |
 
 The service sends its own security headers and precompressed responses, so
 the proxy needs no extra headers or compression settings.

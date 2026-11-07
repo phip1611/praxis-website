@@ -5,22 +5,26 @@
 use crate::app::AppState;
 use crate::cli::{DEFAULT_BIND, DevArgs};
 use crate::config::Config;
-use crate::test_support::test_config;
+use crate::test_support::{MockClock, test_config};
 use crate::web;
 use axum::Router;
 use axum::body::{Body, Bytes};
 use axum::http::{HeaderMap, Request, StatusCode};
 use http_body_util::BodyExt;
 use std::str;
+use std::sync::Arc;
+use tempfile::TempDir;
 use tower::ServiceExt;
 
-/// The whole service.
+/// The service with a mocked clock.
 #[derive(Debug)]
 pub(crate) struct TestApp {
     /// The shared state, for checks on the internals.
     pub(crate) state: AppState,
     /// The router under test.
     router: Router,
+    /// The state directory, e.g., for the statistics.
+    _state_dir: TempDir,
 }
 
 /// A response with the body already read.
@@ -70,11 +74,15 @@ impl TestApp {
     }
 
     /// Creates the service with `config`.
-    fn with_config(config: Config) -> Self {
-        let state = AppState::new(config).expect("the service should start");
+    fn with_config(mut config: Config) -> Self {
+        let state_dir = TempDir::new().expect("temp dir should be created");
+        config.state_dir = state_dir.path().to_path_buf();
+        let clock = Arc::new(MockClock::default());
+        let state = AppState::new(config, clock).expect("the service should start");
         Self {
             router: web::router(state.clone()),
             state,
+            _state_dir: state_dir,
         }
     }
 

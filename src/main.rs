@@ -12,7 +12,6 @@
 
 mod app;
 mod cli;
-#[expect(dead_code, reason = "used by code that a later commit adds")]
 mod clock;
 mod config;
 mod content;
@@ -27,6 +26,10 @@ mod persist;
 mod render;
 mod security;
 mod server;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
 mod stats;
 #[cfg(test)]
 mod test_support;
