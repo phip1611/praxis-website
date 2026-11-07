@@ -2,9 +2,12 @@
 
 //! Renders all pages and the sitemap.
 //!
-//! `public` renders the precomputed snapshot for visitors. This file has the
-//! page frame.
+//! [`SiteRenderer`] is split by audience: `public` renders the precomputed
+//! snapshot for visitors, `admin` renders the login area per request. This
+//! file has the page frame that both share.
 
+#[expect(dead_code, reason = "used by code that a later commit adds")]
+mod admin;
 mod layout;
 mod public;
 mod seo;
@@ -49,6 +52,12 @@ impl SiteRenderer {
             live_reload: config.dev,
             assets,
         }
+    }
+
+    /// Returns the embedded files.
+    #[cfg(test)]
+    pub(crate) fn assets(&self) -> &AssetCatalog {
+        &self.assets
     }
 
     /// Returns the absolute URL of an embedded file.
@@ -123,5 +132,24 @@ impl SiteRenderer {
     /// Returns the logo for the structured data and previews.
     fn logo_url(&self) -> String {
         self.asset_url(&SITE.logo.asset)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::test_config;
+
+    /// The login area pages are not indexed and have no analytics.
+    #[test]
+    fn private_pages_are_not_indexed() {
+        let renderer = SiteRenderer::new(&test_config(), Arc::new(AssetCatalog::new()));
+
+        let html = renderer
+            .render_login("", None)
+            .expect("rendering should succeed");
+
+        assert!(html.contains("<meta name=\"robots\" content=\"noindex, nofollow\">"));
+        assert!(!html.contains("rel=\"canonical\""));
     }
 }

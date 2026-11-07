@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+  <article class="entry admin">
+    <h1 class="entry-title">Zugriffsstatistik</h1>
+    <p>
+      In den letzten {{ period_days }} Tagen wurden die Seiten <strong>{{ total_views }}</strong>
+      Mal aufgerufen, dazu {{ total_bot_views }} Mal von Suchmaschinen und anderen Programmen.
+    </p>
+    <p class="admin-meta">
+      Gezählt werden nur Aufrufe der Seiten. Es werden keine personenbezogenen Daten wie IP-Adressen
+      gespeichert. Ein Tag beginnt um Mitternacht.
+    </p>
+    <h2 class="subheading">Nach Seite</h2>
+    <table class="data-table stats-table">
+      <thead>
+        <tr>
+          <th scope="col">Seite</th>
+          <th scope="col" class="number">Aufrufe</th>
+        </tr>
+      </thead>
+      <tbody>
+        {%- for page in pages %}
+          <tr>
+            <th scope="row"><a href="{{ page.path }}">{{ page.label }}</a></th>
+            <td class="number">{{ page.views }}</td>
+          </tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+    <h2 class="subheading">Nach Tag</h2>
+    <table class="data-table stats-table">
+      <thead>
+        <tr>
+          <th scope="col">Tag</th>
+          <th scope="col" class="number">Aufrufe</th>
+          <th scope="col"><span class="visually-hidden">Verlauf</span></th>
+          <th scope="col" class="number">Programme</th>
+          <th scope="col" class="number">Nicht gefunden</th>
+        </tr>
+      </thead>
+      <tbody>
+        {%- for day in days %}
+          <tr>
+            <th scope="row">{{ day.date }}</th>
+            <td class="number">{{ day.views }}</td>
+            <td>
+              <meter min="0" max="{{ max_views }}" value="{{ day.views }}">{{ day.views }}</meter>
+            </td>
+            <td class="number">{{ day.bot_views }}</td>
+            <td class="number">{{ day.not_found }}</td>
+          </tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+    <form method="post" action="/admin/logout/" class="logout-form">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <p class="admin-meta">
+        Angemeldet als <strong>{{ username }}</strong>.
+        <button type="submit" class="link-button">Abmelden</button>
+      </p>
+    </form>
+  </article>
+{% endblock %}
