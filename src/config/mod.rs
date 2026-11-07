@@ -9,6 +9,7 @@ pub(crate) use analytics::{Analytics, MatomoUrl};
 pub(crate) use base_url::BaseUrl;
 
 use crate::cli::{DevArgs, ServeArgs};
+use axum::http::HeaderName;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
@@ -42,6 +43,8 @@ pub(crate) struct Config {
     pub(crate) analytics: Option<Analytics>,
     /// The origins that may send state-changing requests.
     pub(crate) allowed_origins: Vec<String>,
+    /// The header with the client address from the reverse proxy, if trusted.
+    pub(crate) client_ip_header: Option<HeaderName>,
 }
 
 impl Config {
@@ -61,6 +64,7 @@ impl Config {
                 .zip(args.matomo_site_id)
                 .map(|(url, site_id)| Analytics::new(url, site_id)),
             allowed_origins,
+            client_ip_header: args.client_ip_header,
         }
     }
 
@@ -82,6 +86,7 @@ impl Config {
             accounts: AccountsSource::DevAccount,
             analytics: None,
             allowed_origins,
+            client_ip_header: None,
         }
     }
 }
@@ -100,6 +105,7 @@ mod tests {
             accounts_file: PathBuf::from("/etc/accounts"),
             matomo_url: None,
             matomo_site_id: None,
+            client_ip_header: None,
         }
     }
 

@@ -6,6 +6,7 @@
 //! systemd units. `STATE_DIRECTORY` is set by systemd's `StateDirectory=`.
 
 use crate::config::{BaseUrl, MatomoUrl};
+use axum::http::HeaderName;
 use clap::{Args, Parser, Subcommand};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
@@ -71,6 +72,12 @@ pub(crate) struct ServeArgs {
     /// The ID of this site in Matomo.
     #[arg(long, env = "PRAXIS_MATOMO_SITE_ID", requires = "matomo_url")]
     pub(crate) matomo_site_id: Option<u32>,
+
+    /// The header in which the reverse proxy reports the client address,
+    /// e.g., `X-Real-IP`. Enables the per-client login limit. Only set it if
+    /// the proxy overwrites the header, as clients can send it themselves.
+    #[arg(long, env = "PRAXIS_CLIENT_IP_HEADER")]
+    pub(crate) client_ip_header: Option<HeaderName>,
 }
 
 /// The options of the development server.
@@ -209,6 +216,21 @@ mod tests {
         assert_eq!(
             parse_error(&[SERVE, &["--matomo-site-id", "9"]].concat()),
             ErrorKind::MissingRequiredArgument
+        );
+    }
+
+    /// The client IP header is validated and normalized to lowercase.
+    #[test]
+    fn client_ip_header_is_validated() {
+        let args = serve_args(&[SERVE, &["--client-ip-header", "X-Real-IP"]].concat());
+
+        assert_eq!(
+            args.client_ip_header.map(|name| name.to_string()),
+            Some("x-real-ip".to_string())
+        );
+        assert_eq!(
+            parse_error(&[SERVE, &["--client-ip-header", "not a header"]].concat()),
+            ErrorKind::ValueValidation
         );
     }
 }

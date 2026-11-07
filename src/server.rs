@@ -79,6 +79,7 @@ pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
 
     let stats = Arc::clone(&state.stats);
     tokio::spawn(stats::report::run(Arc::clone(&stats)));
+    tokio::spawn(Arc::clone(&state.auth).sweep_periodically());
 
     // After the signal, open requests get a grace period, so that a stuck
     // connection can't delay saving the statistics until systemd kills us.

@@ -166,6 +166,18 @@ impl TestApp {
             .await
     }
 
+    /// Submits the login form from the client with address `client_ip`, as
+    /// the reverse proxy would report it.
+    pub(crate) async fn login_from(&self, client_ip: &str, password: &str) -> TestResponse {
+        self.post_form_with(
+            TEST_BASE_URL,
+            "/admin/login/",
+            &[("username", TEST_USER), ("password", password)],
+            &[("x-real-ip", client_ip)],
+        )
+        .await
+    }
+
     /// Submits a form from `origin` with extra headers.
     async fn post_form_with(
         &self,

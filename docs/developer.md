@@ -37,7 +37,7 @@ encoding and checks the ETag.
 | `render`   | askama templates, page frame, JSON-LD, sitemap                                |
 | `delivery` | Embedded assets with hashed URLs, compression, the snapshot                   |
 | `web`      | Router, public and legacy routes, login area, middleware                      |
-| `security` | All security code: passwords, sessions, CSRF, headers, sanitizing             |
+| `security` | All security code: passwords, sessions, CSRF, throttling, headers, sanitizing |
 | `stats`    | Anonymous page view counters and the daily log summary                        |
 | `persist`  | Atomic JSON files in the state directory                                      |
 

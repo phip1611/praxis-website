@@ -90,7 +90,7 @@ impl AppState {
                 .map(|analytics| analytics.origin()),
         ));
         Ok(Self {
-            auth: Arc::new(Authenticator::new(credentials, &clock)),
+            auth: Arc::new(Authenticator::new(credentials, &clock)?),
             stats: Arc::new(AccessStats::load(clock, &config.state_dir)),
             config: Arc::new(config),
             renderer,

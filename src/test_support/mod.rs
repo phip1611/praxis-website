@@ -15,7 +15,11 @@ use crate::cli::{DEFAULT_BIND, ServeArgs};
 use crate::config::{BaseUrl, Config};
 use argon2::password_hash::PasswordHasher;
 use argon2::{Algorithm, Argon2, Params, Version};
+use axum::http::HeaderName;
+use std::future::poll_fn;
 use std::path::PathBuf;
+use std::pin::pin;
+use std::task::Poll;
 
 /// The account of the test fixtures.
 pub(crate) const TEST_USER: &str = "dirk";
@@ -58,6 +62,13 @@ pub(crate) fn accounts_file(accounts: &[(&str, &str)]) -> String {
         .join("\n")
 }
 
+/// Polls `future` once and drops it, like a client that disconnects while
+/// its request runs.
+pub(crate) async fn poll_once_and_drop(future: impl Future) {
+    let mut future = pin!(future);
+    let _ = poll_fn(|context| Poll::Ready(future.as_mut().poll(context))).await;
+}
+
 /// Returns a production configuration for the test site.
 pub(crate) fn test_config() -> Config {
     Config::production(ServeArgs {
@@ -67,5 +78,6 @@ pub(crate) fn test_config() -> Config {
         accounts_file: PathBuf::from("/nonexistent/accounts"),
         matomo_url: None,
         matomo_site_id: None,
+        client_ip_header: Some(HeaderName::from_static("x-real-ip")),
     })
 }
