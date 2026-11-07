@@ -41,6 +41,7 @@ pub(crate) mod headers;
 pub(crate) mod origin;
 pub(crate) mod password;
 mod rate_limit;
+#[expect(dead_code, reason = "used by code that a later commit adds")]
 pub(crate) mod sanitize;
 pub(crate) mod session;
 pub(crate) mod throttle;

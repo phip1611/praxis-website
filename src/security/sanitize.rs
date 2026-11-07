@@ -8,6 +8,7 @@
 //! Policy can forbid inline styles.
 
 use ammonia::{Builder, UrlRelative};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt::{self, Display, Formatter};
 use std::sync::LazyLock;
@@ -58,7 +59,11 @@ static SANITIZER: LazyLock<Builder<'static>> = LazyLock::new(|| {
 });
 
 /// HTML that went through the allowlist.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+///
+/// Deserialization sanitizes as well, so manual edits of the state file can't
+/// bypass the allowlist.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(from = "String", into = "String")]
 pub(crate) struct SanitizedHtml(String);
 
 impl SanitizedHtml {
@@ -71,6 +76,25 @@ impl SanitizedHtml {
     #[cfg(test)]
     pub(crate) fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Returns the length of the HTML in bytes.
+    pub(crate) const fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl From<String> for SanitizedHtml {
+    /// Sanitizes `html`.
+    fn from(html: String) -> Self {
+        Self::sanitize(&html)
+    }
+}
+
+impl From<SanitizedHtml> for String {
+    /// Returns the sanitized HTML.
+    fn from(html: SanitizedHtml) -> Self {
+        html.0
     }
 }
 
@@ -197,5 +221,25 @@ mod tests {
         let seed = include_str!("../../content/aktuelle-informationen.html").trim();
 
         assert_eq!(clean(seed), seed);
+    }
+
+    /// A manipulated state file can't inject markup.
+    #[test]
+    fn deserializing_sanitizes() {
+        let html: SanitizedHtml = serde_json::from_str("\"<script>alert(1)</script><p>a</p>\"")
+            .expect("JSON string should parse");
+
+        assert_eq!(html.as_str(), "<p>a</p>");
+    }
+
+    /// Serializing produces a plain JSON string.
+    #[test]
+    fn serializes_as_string() {
+        let html = SanitizedHtml::sanitize("<p>a</p>");
+
+        assert_eq!(
+            serde_json::to_string(&html).expect("should serialize"),
+            "\"<p>a</p>\""
+        );
     }
 }
