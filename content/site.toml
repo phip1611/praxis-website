@@ -57,3 +57,76 @@ morning = { opens = "08:00", closes = "12:00" }
 name = "Freitag"
 schema_day = "https://schema.org/Friday"
 morning = { opens = "08:00", closes = "12:00" }
+
+# The start page. The description is the one of the WordPress site.
+[home]
+label = "Startseite"
+news_heading = "Aktuelle Informationen"
+description = """\
+  Öffnungszeiten, Anfahrt, Kontaktmöglichkeiten sowie aktuelle Neuigkeiten der \
+  Arztpraxis Dirk Schuster in Thalheim. – Dipl.-Med. Dirk Schuster"""
+
+# The square logo, the default preview image and the logo in the search engine
+# data. The caption is the site name.
+[logo]
+asset = "images/cropped-Logo-und-Favicon.png"
+width = 512
+height = 512
+caption = "Hausarztpraxis Dirk Schuster"
+
+# The main image of the contact page.
+[business_card]
+asset = "images/Visitenkarte-Arztpraxis-Dirk-Schuster.png"
+width = 1800
+height = 1200
+caption = "Visitenkarte Arztpraxis Dirk Schuster"
+
+# The fixed pages, in navigation order. Paths and headings are those of the
+# WordPress site, so that search engines see the same pages. The descriptions
+# are new, and tests check that their facts match the practice data above.
+# `reading_time` tells whether WordPress announced a reading time.
+[[pages]]
+path = "/oeffnungszeiten/"
+heading = "Öffnungszeiten"
+description = """\
+  Öffnungszeiten der Hausarztpraxis Dirk Schuster in Thalheim: Mo 8-12 und \
+  16-18 Uhr, Di 8-10 Uhr, Mi 15-19 Uhr, Do und Fr 8-12 Uhr."""
+reading_time = false
+body = "opening-hours"
+
+[[pages]]
+path = "/kontakt/"
+heading = "Kontakt"
+description = """\
+  Kontakt zur Hausarztpraxis Dirk Schuster, Stadtbadstraße 1b, 09380 Thalheim: \
+  Telefon 03721 39040, Fax, E-Mail und Visitenkarte."""
+reading_time = false
+body = "contact"
+
+[[pages]]
+path = "/anfahrt/"
+heading = "Anfahrt"
+description = """\
+  Anfahrt zur Hausarztpraxis Dirk Schuster in der Stadtbadstraße 1b in \
+  Thalheim: Zugang ohne Treppen, auch für Rollstuhlfahrer, und Parkplätze im \
+  Hof."""
+reading_time = true
+body = "directions"
+
+[[pages]]
+path = "/impressum/"
+heading = "Impressum"
+description = """\
+  Impressum der Hausarztpraxis Dipl.-Med. Dirk Schuster in \
+  Thalheim/Erzgebirge: Angaben gemäß § 5 DDG, Aufsichtsbehörde, Kammer und \
+  berufsrechtliche Regelungen."""
+reading_time = true
+body = "imprint"
+
+[[pages]]
+path = "/datenschutz/"
+heading = "Datenschutz"
+description = """\
+  Datenschutzhinweise der Hausarztpraxis Dirk Schuster in Thalheim."""
+reading_time = true
+body = "privacy"

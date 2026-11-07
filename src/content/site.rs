@@ -5,6 +5,7 @@
 //! All content that isn't editable at runtime is in that file, while the code
 //! only defines its structure.
 
+use crate::content::pages::{HomePage, PageImage, PageSpec};
 use crate::content::practice::{OpeningDay, Practice};
 use serde::Deserialize;
 use std::sync::LazyLock;
@@ -27,6 +28,14 @@ pub(crate) struct Site {
     pub(crate) practice: Practice,
     /// The regular opening hours.
     pub(crate) opening_hours: Vec<OpeningDay>,
+    /// The texts of the start page.
+    pub(crate) home: HomePage,
+    /// The square logo, also the default preview image.
+    pub(crate) logo: PageImage,
+    /// The main image of the contact page.
+    pub(crate) business_card: PageImage,
+    /// All fixed pages, in navigation order.
+    pub(crate) pages: Vec<PageSpec>,
 }
 
 #[cfg(test)]
