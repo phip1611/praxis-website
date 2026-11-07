@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Random secrets.
+//! Random secrets and constant-time comparison.
 
 use crate::hex;
 use std::fmt::{self, Debug, Formatter};
+use subtle::ConstantTimeEq;
 use thiserror::Error;
 
 /// The entropy of a token in bytes. 256 bits can't be guessed online.
@@ -14,7 +15,7 @@ const TOKEN_BYTES: usize = 32;
 #[error("the operating system's random number generator failed")]
 pub(crate) struct RandomError;
 
-/// A random secret in hex encoding.
+/// A random secret in hex encoding, safe to use in cookies and HTML forms.
 ///
 /// The [`Debug`] implementation hides the value to keep it out of logs.
 #[derive(Clone, PartialEq, Eq)]
@@ -45,6 +46,14 @@ impl Debug for SecretToken {
     }
 }
 
+/// Compares two byte strings without an early exit on the first difference.
+///
+/// Only the length of the inputs may influence the duration, which is fine as
+/// the length of tokens is public.
+pub(super) fn constant_time_eq(left: &[u8], right: &[u8]) -> bool {
+    left.ct_eq(right).into()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -73,5 +82,14 @@ mod tests {
         let token = SecretToken("very-secret".to_string());
 
         assert!(!format!("{token:?}").contains("very-secret"));
+    }
+
+    /// Different lengths and contents are unequal, identical input is equal.
+    #[test]
+    fn constant_time_eq_compares_content_and_length() {
+        assert!(constant_time_eq(b"", b""));
+        assert!(constant_time_eq(b"same", b"same"));
+        assert!(!constant_time_eq(b"same", b"sane"));
+        assert!(!constant_time_eq(b"same", b"same "));
     }
 }
