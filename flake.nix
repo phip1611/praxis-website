@@ -49,6 +49,10 @@
 
       checks = forAllSystems (pkgs: {
         package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+        module = pkgs.testers.runNixOSTest {
+          imports = [ ./nix/tests/module.nix ];
+          defaults.services.praxis-website.package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+        };
       });
 
       devShells = forAllSystems (pkgs: {

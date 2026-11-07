@@ -153,7 +153,7 @@ in
         LoadCredential = [ "accounts:${accountsFile}" ];
 
         # Hardening. `systemd-analyze security praxis-website` rates this below
-        # 1.0 ("SAFE").
+        # 1.0 ("SAFE"); the VM test in nix/tests checks that.
         DynamicUser = true;
         UMask = "0077";
         CapabilityBoundingSet = "";

@@ -18,17 +18,24 @@ permissions:
   actions: write
 
 jobs:
-  # Builds the package, including its tests, and checks the flake outputs.
+  # Builds the package and runs the VM test of the NixOS module. The VM test
+  # needs KVM, which only the x86_64 runners offer.
   flake_check:
     name: nix flake check (${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        runner: [ ubuntu-latest, ubuntu-24.04-arm ]
+        include:
+          - runner: ubuntu-latest
+            command: nix flake check --print-build-logs
+          - runner: ubuntu-24.04-arm
+            command: nix build --print-build-logs .#checks.aarch64-linux.package
     steps:
       - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: "system-features = nixos-test benchmark big-parallel kvm"
       - uses: nix-community/cache-nix-action@v7
         with:
           primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/*.nix', 'flake.lock', 'Cargo.lock') }}
@@ -39,4 +46,4 @@ jobs:
           purge-created: 0
           purge-last-accessed: P7D
           purge-primary-key: never
-      - run: nix flake check --print-build-logs
+      - run: ${{ matrix.command }}

@@ -9,7 +9,8 @@ globally (600 password checks per minute).
 
 ## NixOS
 
-The flake exports a NixOS module with a hardened systemd service.
+The flake exports a NixOS module with a hardened systemd service. Its VM test
+(`nix flake check`) checks that the hardening doesn't break the service.
 
 ```nix
 { praxis-website, ... }:
