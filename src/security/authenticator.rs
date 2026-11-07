@@ -15,8 +15,11 @@
 
 use crate::clock::Clock;
 use crate::hex;
+use crate::persist::StoreError;
 use crate::security::client_ip::ClientPseudonyms;
 use crate::security::credentials::CredentialStore;
+use crate::security::password::{PasswordError, PasswordHash, validate_new};
+use crate::security::password_overrides::PasswordOverrides;
 use crate::security::rate_limit::{self, Decision, RateLimit};
 use crate::security::session::SessionStore;
 use crate::security::throttle::LoginThrottle;
@@ -93,6 +96,32 @@ pub(crate) enum LoginError {
     TaskFailed,
 }
 
+/// Why a password change failed.
+#[derive(Debug, Error)]
+pub(crate) enum PasswordChangeError {
+    /// The current password is wrong.
+    #[error("the current password is wrong")]
+    WrongPassword,
+    /// The new password violates the length limits.
+    #[error(transparent)]
+    Invalid(#[from] PasswordError),
+    /// There were too many recent failures of this client or account.
+    #[error("too many failed attempts")]
+    Throttled {
+        /// How long the client has to wait.
+        retry_after: SignedDuration,
+    },
+    /// Too many password checks are running or ran recently.
+    #[error("too many password checks")]
+    Busy,
+    /// The new password couldn't be stored. The old one stays valid.
+    #[error(transparent)]
+    Store(#[from] StoreError),
+    /// The password check task failed unexpectedly.
+    #[error("the password check task failed")]
+    TaskFailed,
+}
+
 /// Why a password check may not run now.
 #[derive(Debug)]
 enum Refusal {
@@ -107,6 +136,8 @@ enum Refusal {
 pub(crate) struct Authenticator {
     /// The accounts that may log in.
     credentials: Arc<CredentialStore>,
+    /// The passwords changed in the login area.
+    overrides: Arc<PasswordOverrides>,
     /// Turns client addresses into throttle keys.
     client_pseudonyms: ClientPseudonyms,
     /// The limit for failed logins per client.
@@ -131,10 +162,12 @@ impl Authenticator {
     /// generated.
     pub(crate) fn new(
         credentials: Arc<CredentialStore>,
+        overrides: PasswordOverrides,
         clock: &Arc<dyn Clock>,
     ) -> Result<Self, RandomError> {
         Ok(Self {
             credentials,
+            overrides: Arc::new(overrides),
             client_pseudonyms: ClientPseudonyms::generate()?,
             client_throttle: LoginThrottle::new(Arc::clone(clock), MAX_FAILURES_PER_CLIENT),
             account_throttle: LoginThrottle::new(Arc::clone(clock), MAX_FAILURES_PER_ACCOUNT),
@@ -218,6 +251,61 @@ impl Authenticator {
         Ok(self.sessions.create(account)?)
     }
 
+    /// Changes the password of the logged-in `account`.
+    ///
+    /// The current password is required and throttled like a login, so that
+    /// a stolen session can't be used to guess it. The new password is stored
+    /// before it applies, so a failed write keeps the old one.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PasswordChangeError`] with the reason.
+    pub(crate) async fn change_password(
+        &self,
+        account: &str,
+        current: &str,
+        new: &str,
+        client: Option<IpAddr>,
+    ) -> Result<(), PasswordChangeError> {
+        validate_new(new)?;
+        let client_key = client.map(|address| self.client_pseudonyms.of(address));
+        let slot = match self.admit(client_key.as_deref(), account) {
+            Ok(slot) => slot,
+            Err(Refusal::Throttled(retry_after)) => {
+                return Err(PasswordChangeError::Throttled { retry_after });
+            }
+            Err(Refusal::Busy) => return Err(PasswordChangeError::Busy),
+        };
+
+        // A blocking task that can't be cancelled, so that storing and
+        // applying the new password happen together.
+        let (credentials, overrides) = (Arc::clone(&self.credentials), Arc::clone(&self.overrides));
+        let (owner, current, new) = (account.to_string(), current.to_string(), new.to_string());
+        let changed = task::spawn_blocking(move || {
+            let _slot = slot;
+            let configured = credentials.configured_hash(&owner);
+            let (Some(configured), Some(_)) = (configured, credentials.verify(&owner, &current))
+            else {
+                return Ok(false);
+            };
+            let hash = PasswordHash::create(&new)?;
+            overrides.save(&owner, &hash, &configured)?;
+            credentials.set_password(&owner, hash);
+            Ok::<_, PasswordChangeError>(true)
+        })
+        .await
+        .map_err(|_| PasswordChangeError::TaskFailed)??;
+
+        if !changed {
+            warn!(account, "password change failed: wrong current password");
+            self.record_failure(account, client_key.as_deref(), account);
+            return Err(PasswordChangeError::WrongPassword);
+        }
+        self.record_success(client_key.as_deref(), account);
+        info!(account, "password changed");
+        Ok(())
+    }
+
     /// Checks the throttles and limits, and returns a password check slot.
     fn admit(
         &self,
@@ -278,17 +366,21 @@ mod tests {
     use crate::test_support::{MockClock, TEST_PASSWORD, TEST_USER, accounts_file};
     use std::assert_matches;
     use std::time::Duration;
+    use tempfile::TempDir;
     use tokio::time::timeout;
 
     /// Creates an authenticator with the test account and a controllable clock.
-    fn authenticator() -> (Arc<MockClock>, Authenticator) {
+    fn authenticator() -> (Arc<MockClock>, TempDir, Authenticator) {
         let mock = Arc::new(MockClock::default());
         let clock: Arc<dyn Clock> = Arc::<MockClock>::clone(&mock);
         let credentials = CredentialStore::parse(&accounts_file(&[(TEST_USER, TEST_PASSWORD)]))
             .expect("fixture should be valid");
-        let auth =
-            Authenticator::new(Arc::new(credentials), &clock).expect("OS RNG should work in tests");
-        (mock, auth)
+        let state_dir = TempDir::new().expect("temp dir should be created");
+        let credentials = Arc::new(credentials);
+        let overrides = PasswordOverrides::load(state_dir.path(), &credentials);
+        let auth = Authenticator::new(credentials, overrides, &clock)
+            .expect("OS RNG should work in tests");
+        (mock, state_dir, auth)
     }
 
     /// Returns the address of test client `n`.
@@ -310,7 +402,7 @@ mod tests {
     /// Valid credentials create a session for the account.
     #[tokio::test]
     async fn login_creates_session() {
-        let (_, auth) = authenticator();
+        let (_, _dir, auth) = authenticator();
 
         let token = auth
             .login(TEST_USER, TEST_PASSWORD, None)
@@ -324,7 +416,7 @@ mod tests {
     /// Unknown users get the same error as wrong passwords.
     #[tokio::test]
     async fn login_does_not_reveal_existing_users() {
-        let (_, auth) = authenticator();
+        let (_, _dir, auth) = authenticator();
 
         assert_matches!(
             auth.login(TEST_USER, "wrong", None).await,
@@ -341,7 +433,7 @@ mod tests {
     /// per client is lower than the one per account.
     #[tokio::test]
     async fn guessing_client_is_blocked_without_blocking_account() {
-        let (clock, auth) = authenticator();
+        let (clock, _dir, auth) = authenticator();
         fail_logins(
             &auth,
             TEST_USER,
@@ -366,7 +458,7 @@ mod tests {
     /// Guessing spread over many clients still hits the account limit.
     #[tokio::test]
     async fn distributed_guessing_blocks_account() {
-        let (_, auth) = authenticator();
+        let (_, _dir, auth) = authenticator();
         let clients = (0..MAX_FAILURES_PER_ACCOUNT).map(|n| client(u8::try_from(n).expect("fits")));
         fail_logins(&auth, TEST_USER, clients).await;
 
@@ -379,7 +471,7 @@ mod tests {
     /// Without the proxy header, only the account limit applies.
     #[tokio::test]
     async fn without_client_address_the_account_limit_applies() {
-        let (_, auth) = authenticator();
+        let (_, _dir, auth) = authenticator();
         fail_logins(
             &auth,
             TEST_USER,
@@ -397,7 +489,7 @@ mod tests {
     /// for unknown and real names and reveal which accounts exist.
     #[tokio::test]
     async fn unknown_users_are_throttled_individually() {
-        let (_, auth) = authenticator();
+        let (_, _dir, auth) = authenticator();
         fail_logins(&auth, "nobody", (0..MAX_FAILURES_PER_ACCOUNT).map(|_| None)).await;
 
         assert_matches!(
@@ -418,7 +510,7 @@ mod tests {
     /// would start unlimited parallel checks and exhaust the memory.
     #[tokio::test]
     async fn cancelled_login_keeps_slot_until_check_ends() {
-        let (_, auth) = authenticator();
+        let (_, _dir, auth) = authenticator();
 
         // An unknown user is checked against the dummy hash with production
         // parameters, which takes several milliseconds.
@@ -445,7 +537,7 @@ mod tests {
     /// The client throttle keys failures by pseudonym, not by address.
     #[tokio::test]
     async fn client_addresses_are_pseudonymized() {
-        let (_, auth) = authenticator();
+        let (_, _dir, auth) = authenticator();
 
         fail_logins(&auth, TEST_USER, [client(7)].into_iter()).await;
 
@@ -458,7 +550,7 @@ mod tests {
     /// failed logins, so pseudonyms don't stay until the next failure.
     #[tokio::test]
     async fn sweep_forgets_expired_failures() {
-        let (clock, auth) = authenticator();
+        let (clock, _dir, auth) = authenticator();
         fail_logins(&auth, "nobody", [client(7)].into_iter()).await;
 
         clock.advance(SignedDuration::from_mins(15));
@@ -482,7 +574,7 @@ mod tests {
     /// as well until it passes.
     #[tokio::test]
     async fn login_is_refused_when_rate_limit_is_exhausted() {
-        let (clock, auth) = authenticator();
+        let (clock, _dir, auth) = authenticator();
         for _ in 0..rate_limit::MAX_CHECKS {
             auth.rate_limit.try_acquire();
         }
@@ -498,11 +590,68 @@ mod tests {
             .expect("the login should succeed");
     }
 
+    /// The new password applies immediately, the old one stops working.
+    #[tokio::test]
+    async fn change_password_replaces_password() {
+        let (_, _dir, auth) = authenticator();
+        let new = "a completely new password";
+
+        auth.change_password(TEST_USER, TEST_PASSWORD, new, None)
+            .await
+            .expect("change should succeed");
+
+        auth.login(TEST_USER, new, None)
+            .await
+            .expect("the login should succeed");
+        assert_matches!(
+            auth.login(TEST_USER, TEST_PASSWORD, None).await,
+            Err(LoginError::InvalidCredentials)
+        );
+    }
+
+    /// A wrong current password changes nothing and counts as failure, so
+    /// that a stolen session can't be used to guess the password.
+    #[tokio::test]
+    async fn change_password_requires_current_password() {
+        let (_, _dir, auth) = authenticator();
+        let new = "a completely new password";
+
+        for _ in 0..MAX_FAILURES_PER_CLIENT {
+            let result = auth
+                .change_password(TEST_USER, "guess", new, client(1))
+                .await;
+            assert_matches!(result, Err(PasswordChangeError::WrongPassword));
+        }
+
+        let result = auth
+            .change_password(TEST_USER, TEST_PASSWORD, new, client(1))
+            .await;
+        assert_matches!(result, Err(PasswordChangeError::Throttled { .. }));
+        auth.login(TEST_USER, TEST_PASSWORD, client(2))
+            .await
+            .expect("the login should succeed");
+    }
+
+    /// Too short passwords are rejected before any password check runs.
+    #[tokio::test]
+    async fn change_password_rejects_short_password() {
+        let (_, _dir, auth) = authenticator();
+
+        let result = auth
+            .change_password(TEST_USER, TEST_PASSWORD, "short", None)
+            .await;
+
+        assert_matches!(
+            result,
+            Err(PasswordChangeError::Invalid(PasswordError::TooShort))
+        );
+    }
+
     /// Password checks beyond the limit are refused instead of queued, so a
     /// flood of logins can't exhaust the memory.
     #[tokio::test]
     async fn login_is_refused_when_all_slots_are_busy() {
-        let (_, auth) = authenticator();
+        let (_, _dir, auth) = authenticator();
         let _slots = auth
             .verification_slots
             .acquire_many(MAX_CONCURRENT_VERIFICATIONS as u32)

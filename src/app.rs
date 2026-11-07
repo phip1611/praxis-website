@@ -15,6 +15,7 @@ use crate::security::cookie::SessionCookie;
 use crate::security::credentials::{CredentialStore, CredentialsError};
 use crate::security::headers::SecurityHeaders;
 use crate::security::password::PasswordError;
+use crate::security::password_overrides::PasswordOverrides;
 use crate::security::token::{RandomError, SecretToken};
 use crate::stats::AccessStats;
 use std::io;
@@ -91,6 +92,7 @@ impl AppState {
     ) -> Result<Self, StartupError> {
         let news = store.load()?.unwrap_or_else(NewsDocument::seed);
         let credentials = Arc::new(credentials);
+        let overrides = PasswordOverrides::load(&config.state_dir, &credentials);
         let assets = Arc::new(AssetCatalog::new());
         let renderer = Arc::new(SiteRenderer::new(&config, assets));
         let site = Arc::new(SiteCache::new(renderer.render_site(&news)?));
@@ -104,7 +106,7 @@ impl AppState {
         ));
         Ok(Self {
             stats: Arc::new(AccessStats::load(Arc::clone(&clock), &config.state_dir)),
-            auth: Arc::new(Authenticator::new(credentials, &clock)?),
+            auth: Arc::new(Authenticator::new(credentials, overrides, &clock)?),
             config: Arc::new(config),
             clock,
             renderer,
