@@ -6,6 +6,7 @@
 //! Thalheim/Erzgebirge.
 
 mod cli;
+mod config;
 mod logging;
 
 use crate::cli::Cli;
