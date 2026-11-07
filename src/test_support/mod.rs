@@ -64,6 +64,7 @@ pub(crate) fn test_config() -> Config {
         bind: DEFAULT_BIND,
         base_url: BaseUrl::parse(TEST_BASE_URL).expect("the test URL should be valid"),
         state_dir: PathBuf::from("/nonexistent/state"),
+        accounts_file: PathBuf::from("/nonexistent/accounts"),
         matomo_url: None,
         matomo_site_id: None,
     })

@@ -75,7 +75,6 @@ fn moved_permanently(target: &str) -> Response {
 mod tests {
     use crate::content::pages::HOME_PATH;
     use crate::content::site::SITE;
-    use crate::delivery::assets::AssetCatalog;
     use crate::test_support::{SEED_MARKER, TestApp};
     use axum::http::StatusCode;
     use std::iter;
@@ -195,7 +194,7 @@ mod tests {
     #[tokio::test]
     async fn assets_are_immutable() {
         let app = TestApp::new();
-        let url = AssetCatalog::new().url("style.css").to_string();
+        let url = app.state.renderer.assets().url("style.css").to_string();
 
         let response = app.get(&url).await;
 

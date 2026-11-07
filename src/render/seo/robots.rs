@@ -6,7 +6,8 @@ use crate::config::BaseUrl;
 use crate::content::pages::SITEMAP_PATH;
 
 /// Returns the `robots.txt`: everything may be crawled, and the sitemap is
-/// announced.
+/// announced. The login area is kept out of search results by `noindex`
+/// headers instead, as a `Disallow` would prevent crawlers from seeing them.
 pub(crate) fn robots_txt(base: &BaseUrl) -> String {
     format!(
         "User-agent: *\nDisallow:\n\nSitemap: {}\n",

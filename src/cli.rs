@@ -28,8 +28,8 @@ pub(crate) struct Cli {
 pub(crate) enum Command {
     /// Serves the website.
     Serve(ServeArgs),
-    /// Local development: no configuration needed, and the page reloads
-    /// after code changes.
+    /// Local development: no configuration needed, a fixed login
+    /// (admin/admin), and the page reloads after code changes.
     Dev(DevArgs),
     /// Reads a password and prints an entry for the accounts file.
     ///
@@ -51,9 +51,13 @@ pub(crate) struct ServeArgs {
     #[arg(long, env = "PRAXIS_BASE_URL", value_parser = BaseUrl::parse)]
     pub(crate) base_url: BaseUrl,
 
-    /// The directory for the access statistics.
+    /// The directory for the news and the access statistics.
     #[arg(long, env = "STATE_DIRECTORY")]
     pub(crate) state_dir: PathBuf,
+
+    /// The accounts file.
+    #[arg(long, env = "PRAXIS_ACCOUNTS_FILE")]
+    pub(crate) accounts_file: PathBuf,
 
     /// The URL of the Matomo installation, e.g., `https://stats.example.com/`.
     #[arg(
@@ -91,6 +95,8 @@ mod tests {
         "https://praxis.test",
         "--state-dir",
         "/state",
+        "--accounts-file",
+        "/accounts",
     ];
 
     /// The clap definition is consistent (no conflicting names etc.).
@@ -159,7 +165,14 @@ mod tests {
     #[test]
     fn serve_requires_explicit_settings() {
         assert_eq!(
-            parse_error(&["praxis-website", "serve", "--state-dir", "/state"]),
+            parse_error(&[
+                "praxis-website",
+                "serve",
+                "--state-dir",
+                "/state",
+                "--accounts-file",
+                "/accounts"
+            ]),
             ErrorKind::MissingRequiredArgument
         );
         assert_eq!(
@@ -167,7 +180,20 @@ mod tests {
                 "praxis-website",
                 "serve",
                 "--base-url",
-                "https://praxis.test"
+                "https://praxis.test",
+                "--accounts-file",
+                "/accounts"
+            ]),
+            ErrorKind::MissingRequiredArgument
+        );
+        assert_eq!(
+            parse_error(&[
+                "praxis-website",
+                "serve",
+                "--base-url",
+                "https://praxis.test",
+                "--state-dir",
+                "/state"
             ]),
             ErrorKind::MissingRequiredArgument
         );

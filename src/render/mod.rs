@@ -6,7 +6,6 @@
 //! snapshot for visitors, `admin` renders the login area per request. This
 //! file has the page frame that both share.
 
-#[expect(dead_code, reason = "used by code that a later commit adds")]
 mod admin;
 mod layout;
 mod public;

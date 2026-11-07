@@ -4,7 +4,9 @@
 
 use crate::app::{AppState, StartupError};
 use crate::clock::SystemClock;
-use crate::config::Config;
+use crate::config::{AccountsSource, Config};
+use crate::security::credentials::CredentialStore;
+use crate::security::password::PasswordHash;
 use crate::{stats, web};
 use std::fs;
 use std::future::IntoFuture;
@@ -14,6 +16,12 @@ use tokio::net::TcpListener;
 use tokio::sync::Notify;
 use tokio::{signal, time};
 use tracing::{info, warn};
+
+/// The username of the development mode.
+const DEV_USERNAME: &str = "admin";
+
+/// The password of the development mode.
+const DEV_PASSWORD: &str = "admin";
 
 /// How long open requests may take after SIGTERM. Below systemd's
 /// `TimeoutStopSec`, so that the statistics are saved before it kills us.
@@ -32,17 +40,27 @@ pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
         ),
         source,
     })?;
+    let credentials = match &config.accounts {
+        AccountsSource::File(path) => CredentialStore::from_file(path)?,
+        AccountsSource::DevAccount => {
+            CredentialStore::single(DEV_USERNAME, PasswordHash::create_unchecked(DEV_PASSWORD)?)
+        }
+    };
     info!(
         public_url = config.base_url.origin(),
         state_dir = %config.state_dir.display(),
+        accounts = credentials.len(),
         analytics = config.analytics.is_some(),
         "starting praxis-website {}",
         env!("CARGO_PKG_VERSION")
     );
+    if !config.dev && !config.base_url.is_https() {
+        warn!("the public URL isn't HTTPS, so the session cookie lacks the Secure attribute");
+    }
 
     let bind = config.bind;
     let dev = config.dev;
-    let state = AppState::new(config, Arc::new(SystemClock))?;
+    let state = AppState::new(config, Arc::new(SystemClock), credentials)?;
     let base = state.config.base_url.clone();
     let listener = TcpListener::bind(bind)
         .await
@@ -52,7 +70,11 @@ pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
         })?;
     info!("listening on {bind}");
     if dev {
-        info!("development mode: open {}", base.join("/"));
+        info!(
+            "development mode: open {} and log in at {} as {DEV_USERNAME} / {DEV_PASSWORD}",
+            base.join("/"),
+            base.join(web::admin::LOGIN_PATH),
+        );
     }
 
     let stats = Arc::clone(&state.stats);

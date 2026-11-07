@@ -7,15 +7,16 @@ How the service works and how to change it.
 `nix develop` (or direnv with `use flake`) provides rustup, [bacon], [typos],
 and the Nix formatter.
 
-| Command           | Purpose                                                   |
-|-------------------|-----------------------------------------------------------|
-| `cargo dev`       | Dev server on <http://localhost:8080>                     |
-| `bacon`           | Same, rebuilds on changes, and the browser reloads itself |
-| `cargo test`      | Unit tests, including HTTP tests of the whole router      |
-| `nix flake check` | Builds the Nix package and runs the tests                 |
-| `nix fmt`         | Formats the Nix files                                     |
+| Command           | Purpose                                                      |
+|-------------------|--------------------------------------------------------------|
+| `cargo dev`       | Dev server on <http://localhost:8080>, login `admin`/`admin` |
+| `bacon`           | Same, rebuilds on changes, and the browser reloads itself    |
+| `cargo test`      | Unit tests, including HTTP tests of the whole router         |
+| `nix flake check` | Builds the Nix package and runs the tests                    |
+| `nix fmt`         | Formats the Nix files                                        |
 
-The dev mode needs no configuration and keeps its state in `.dev-state/`.
+The dev mode needs no configuration and keeps its state in `.dev-state/`. It
+refuses to listen on other addresses than localhost, as its password is fixed.
 
 CI runs rustfmt, clippy, rustdoc, the tests, typos, and `nix flake check`. The
 lints in `Cargo.toml` require docs on every item, including private ones.
@@ -30,15 +31,18 @@ every page and the sitemap, and `delivery` compresses them
 (Brotli, gzip) into an immutable snapshot. A request only negotiates the
 encoding and checks the ETag.
 
-| Module     | Responsibility                                                      |
-|------------|---------------------------------------------------------------------|
-| `content`  | Practice data, the page table with paths and metadata, and the news |
-| `render`   | askama templates, page frame, JSON-LD, sitemap                      |
-| `delivery` | Embedded assets with hashed URLs, compression, the snapshot         |
-| `web`      | Router, public and legacy routes, middleware                        |
-| `security` | All security code: headers, sanitizing, random tokens               |
-| `stats`    | Anonymous page view counters and the daily log summary              |
-| `persist`  | Atomic JSON files in the state directory                            |
+| Module     | Responsibility                                                                |
+|------------|-------------------------------------------------------------------------------|
+| `content`  | Practice data, the page table with paths and metadata, and the news           |
+| `render`   | askama templates, page frame, JSON-LD, sitemap                                |
+| `delivery` | Embedded assets with hashed URLs, compression, the snapshot                   |
+| `web`      | Router, public and legacy routes, login area, middleware                      |
+| `security` | All security code: passwords, sessions, CSRF, headers, sanitizing             |
+| `stats`    | Anonymous page view counters and the daily log summary                        |
+| `persist`  | Atomic JSON files in the state directory                                      |
+
+State-changing handlers take `SessionForm` or `SameOriginForm` from
+`web::admin::forms`, which apply the origin and CSRF checks.
 
 ## Common Changes
 
@@ -59,12 +63,14 @@ checks that every target exists.
 ## Tests
 
 Tests use the fixtures in `src/test_support/`: `TestApp` runs the whole router
-in memory with a mock clock. A typical test only states the interesting steps:
+in memory with a mock clock, and `LoggedIn` is a logged-in browser session. A
+typical test only states the interesting steps:
 
 ```rust
 let app = TestApp::new();
-let contact = app.get("/kontakt/").await;
-check!(contact.text().contains("Stadtbadstraße 1b"));
+let session = app.login().await;
+let stats = session.get("/admin/statistik/").await;
+check!(stats.visible_text().contains("Zugriffsstatistik"));
 ```
 
 [bacon]: https://dystroy.org/bacon/
