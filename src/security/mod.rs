@@ -17,12 +17,18 @@
 //! - [`password`]: Argon2id hashing and verification.
 //! - [`credentials`]: The accounts file and account lookup.
 //! - [`session`]: Server-side sessions with idle and absolute timeouts.
+//! - [`authenticator`]: The login flow, combining the parts above.
 //! - [`csrf`]: Per-session tokens for state-changing requests.
 //! - [`origin`]: Rejects cross-origin state-changing requests.
 //! - [`cookie`]: The attributes and parsing of the session cookie.
 //! - [`headers`]: Security headers such as the Content Security Policy.
 //! - [`sanitize`]: The allowlist for the HTML of the news.
 
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
+pub(crate) mod authenticator;
 #[cfg_attr(
     not(test),
     expect(dead_code, reason = "used by code that a later commit adds")
