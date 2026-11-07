@@ -3,14 +3,15 @@
 //! Serves the precomputed public pages.
 
 use crate::app::AppState;
+use crate::web::legacy::{self, LegacyTarget};
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, Uri, header};
 use axum::response::{IntoResponse, Response};
 
 /// Answers all requests that no other route handles.
 ///
-/// The order: current pages, the missing trailing slash (WordPress redirected
-/// these as well), and finally the 404 page.
+/// The order: current pages, old WordPress URLs, the missing trailing slash
+/// (WordPress redirected these as well), and finally the 404 page.
 pub(super) async fn serve(
     State(state): State<AppState>,
     method: Method,
@@ -28,6 +29,11 @@ pub(super) async fn serve(
     let snapshot = &state.site;
     if let Some(page) = snapshot.get(path) {
         return page.respond(&headers);
+    }
+    match legacy::resolve(path) {
+        Some(LegacyTarget::Moved(target)) => return moved_permanently(target),
+        Some(LegacyTarget::Gone) => return StatusCode::GONE.into_response(),
+        None => {}
     }
     if !path.ends_with('/') {
         let with_slash = format!("{path}/");
@@ -144,6 +150,17 @@ mod tests {
 
         assert_eq!(response.status, StatusCode::MOVED_PERMANENTLY);
         assert_eq!(response.header("location"), "/kontakt/");
+    }
+
+    /// The indexed URL of the old news post leads to the start page.
+    #[tokio::test]
+    async fn redirects_old_news_url() {
+        let app = TestApp::new();
+
+        let response = app.get("/2026/10/aktuelle-informationen/").await;
+
+        assert_eq!(response.status, StatusCode::MOVED_PERMANENTLY);
+        assert_eq!(response.header("location"), "/");
     }
 
     /// Old image URLs keep working without redirect.

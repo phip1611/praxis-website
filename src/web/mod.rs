@@ -2,6 +2,7 @@
 
 //! The HTTP interface.
 
+mod legacy;
 mod middleware;
 mod public;
 
