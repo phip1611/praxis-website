@@ -16,12 +16,24 @@
 //! - [`token`]: Random secrets and constant-time comparison.
 //! - [`password`]: Argon2id hashing and verification.
 //! - [`credentials`]: The accounts file and account lookup.
+//! - [`csrf`]: Per-session tokens for state-changing requests.
+//! - [`origin`]: Rejects cross-origin state-changing requests.
 //! - [`headers`]: Security headers such as the Content Security Policy.
 //! - [`sanitize`]: The allowlist for the HTML of the news.
 
 #[expect(dead_code, reason = "used by code that a later commit adds")]
 pub(crate) mod credentials;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
+mod csrf;
 pub(crate) mod headers;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
+pub(crate) mod origin;
 #[cfg_attr(
     not(test),
     expect(dead_code, reason = "used by code that a later commit adds")

@@ -37,6 +37,14 @@ impl SecretToken {
     pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
+
+    /// Compares the token with `provided` in constant time.
+    ///
+    /// The duration of the comparison reveals nothing about how many leading
+    /// characters match, so that an attacker can't guess the token piecewise.
+    pub(super) fn matches(&self, provided: &str) -> bool {
+        constant_time_eq(self.0.as_bytes(), provided.as_bytes())
+    }
 }
 
 impl Debug for SecretToken {
@@ -74,6 +82,18 @@ mod tests {
         let second = SecretToken::generate().expect("OS RNG should work in tests");
 
         assert_ne!(first, second);
+    }
+
+    /// `matches` accepts only the exact token.
+    #[test]
+    fn matches_accepts_only_exact_value() {
+        let token = SecretToken("abcd".to_string());
+
+        assert!(token.matches("abcd"));
+        assert!(!token.matches("abce"));
+        assert!(!token.matches("abc"));
+        assert!(!token.matches("abcde"));
+        assert!(!token.matches(""));
     }
 
     /// Secrets must not end up in logs through `{:?}`.
