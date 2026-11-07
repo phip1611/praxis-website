@@ -16,6 +16,7 @@ mod clock;
 mod config;
 mod content;
 mod delivery;
+mod hash_password;
 mod hex;
 mod logging;
 mod persist;
@@ -34,11 +35,18 @@ use std::process::ExitCode;
 use tokio::runtime::Builder;
 use tracing::error;
 
-/// Parses the command line and runs the server.
+/// Parses the command line and runs the requested command.
 fn main() -> ExitCode {
     match Cli::parse().command {
         Command::Serve(args) => serve(Config::production(args)),
         Command::Dev(args) => serve(Config::dev(args)),
+        Command::HashPassword { username } => match hash_password::run(&username) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(err) => {
+                eprintln!("error: {err}");
+                ExitCode::FAILURE
+            }
+        },
     }
 }
 

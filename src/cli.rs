@@ -31,6 +31,13 @@ pub(crate) enum Command {
     /// Local development: no configuration needed, and the page reloads
     /// after code changes.
     Dev(DevArgs),
+    /// Reads a password and prints an entry for the accounts file.
+    ///
+    /// Example: `praxis-website hash-password dirk >> accounts`
+    HashPassword {
+        /// The login name of the account.
+        username: String,
+    },
 }
 
 /// The options of the server.
@@ -118,6 +125,18 @@ mod tests {
             panic!("the value should match `Command::Dev(args)`");
         };
         assert_eq!(args.bind, DEFAULT_BIND);
+    }
+
+    /// The subcommand takes the username.
+    #[test]
+    fn parses_hash_password() {
+        let cli =
+            Cli::try_parse_from(["praxis-website", "hash-password", "dirk"]).expect("should parse");
+
+        let Command::HashPassword { username } = cli.command else {
+            panic!("the value should match `Command::HashPassword {{ username }}`");
+        };
+        assert_eq!(username, "dirk");
     }
 
     /// Returns the kind of the error that parsing `args` fails with.
