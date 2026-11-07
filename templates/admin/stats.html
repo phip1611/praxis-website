@@ -11,6 +11,10 @@
       Gezählt werden nur Aufrufe der Seiten. Es werden keine personenbezogenen Daten wie IP-Adressen
       gespeichert. Ein Tag beginnt um Mitternacht.
     </p>
+    <p class="admin-meta">
+      Gerät, Browser und Betriebssystem werden aus der Kennung des Browsers abgeleitet, die selbst
+      nicht gespeichert wird. iPads geben sich dabei meist als Mac aus.
+    </p>
     <h2 class="subheading">Nach Seite</h2>
     <table class="data-table stats-table">
       <thead>
@@ -28,6 +32,27 @@
         {%- endfor %}
       </tbody>
     </table>
+    {%- for table in clients %}
+      <h2 class="subheading">{{ table.heading }}</h2>
+      <table class="data-table stats-table">
+        <thead>
+          <tr>
+            <th scope="col">{{ table.column }}</th>
+            <th scope="col" class="number">Aufrufe</th>
+            <th scope="col" class="number">Anteil</th>
+          </tr>
+        </thead>
+        <tbody>
+          {%- for row in table.rows %}
+            <tr>
+              <th scope="row">{{ row.label }}</th>
+              <td class="number">{{ row.views }}</td>
+              <td class="number">{{ row.percent }} %</td>
+            </tr>
+          {%- endfor %}
+        </tbody>
+      </table>
+    {%- endfor %}
     <h2 class="subheading">Nach Tag</h2>
     <table class="data-table stats-table">
       <thead>

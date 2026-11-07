@@ -175,6 +175,28 @@ pub(super) struct StatsPageRow {
     pub(super) views: u64,
 }
 
+/// One value of a visitor property in the access statistics, e.g., a browser.
+#[derive(Debug)]
+pub(super) struct StatsShareRow {
+    /// The name of the value.
+    pub(super) label: &'static str,
+    /// The views by people in the period.
+    pub(super) views: u64,
+    /// The share of the views in percent, rounded.
+    pub(super) percent: u64,
+}
+
+/// The views of the period by one visitor property, e.g., by browser.
+#[derive(Debug)]
+pub(super) struct StatsShareTable {
+    /// The heading of the table.
+    pub(super) heading: &'static str,
+    /// The heading of the first column.
+    pub(super) column: &'static str,
+    /// The values, the most frequent first.
+    pub(super) rows: Vec<StatsShareRow>,
+}
+
 /// The access statistics.
 #[derive(Debug, Template)]
 #[template(path = "admin/stats.html")]
@@ -197,6 +219,8 @@ pub(super) struct StatsTemplate<'a> {
     pub(super) days: &'a [StatsDayRow],
     /// The pages, in navigation order.
     pub(super) pages: &'a [StatsPageRow],
+    /// The views by device class, browser, and operating system.
+    pub(super) clients: &'a [StatsShareTable],
 }
 
 /// The form to change the password.

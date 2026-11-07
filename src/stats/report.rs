@@ -107,6 +107,7 @@ mod tests {
             views: BTreeMap::from([("/".to_string(), 80), ("/kontakt/".to_string(), 20)]),
             bot_views: 45,
             not_found: 3,
+            ..DayStats::default()
         };
 
         assert_eq!(

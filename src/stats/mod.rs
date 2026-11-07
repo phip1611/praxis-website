@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Anonymous access statistics: page views per day and page.
+//! Anonymous access statistics: page views per day and page, device class,
+//! browser, and operating system.
 //!
 //! Only counters are stored, no IP addresses, user agents, or other personal
 //! data. The user agent is only inspected to tell crawlers apart, see
-//! [`bots`]. Only known pages get counters, so the memory use is bounded no
-//! matter which paths clients request.
+//! [`bots`], and to classify the visitor, see [`clients`]. Only known pages
+//! get counters, and the classes are fixed, so the memory use is bounded no
+//! matter what clients send.
 //!
 //! The counters live in memory and are written to the state directory every
 //! few minutes and on shutdown, see [`report`].
 
-pub(crate) mod bots;
-#[expect(dead_code, reason = "used by code that a later commit adds")]
+mod bots;
 pub(crate) mod clients;
 pub(crate) mod report;
 
@@ -19,6 +20,8 @@ use crate::clock::Clock;
 use crate::content::pages::HOME_PATH;
 use crate::content::site::SITE;
 use crate::persist::{self, StoreError};
+use crate::stats::bots::is_bot;
+use crate::stats::clients::{Browser, Client, Device, OperatingSystem};
 use jiff::ToSpan;
 use jiff::civil::Date;
 use serde::{Deserialize, Serialize};
@@ -41,15 +44,31 @@ const RETENTION_DAYS: i32 = 366;
 /// One request to count.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Hit<'a> {
-    /// A view of a known page.
-    Page {
+    /// A view of a known page by a person.
+    View {
         /// The path of the page.
         path: &'a str,
-        /// Whether a crawler requested it.
-        bot: bool,
+        /// The visitor.
+        client: Client,
     },
+    /// A view of a known page by a crawler or another program.
+    BotView,
     /// A request to an unknown path.
     NotFound,
+}
+
+impl<'a> Hit<'a> {
+    /// Returns the hit for a view of the known page `path` by a client with
+    /// this user agent.
+    pub(crate) fn page(path: &'a str, user_agent: Option<&str>) -> Self {
+        if is_bot(user_agent) {
+            return Self::BotView;
+        }
+        Self::View {
+            path,
+            client: Client::from_user_agent(user_agent.unwrap_or_default()),
+        }
+    }
 }
 
 /// The counters of one day.
@@ -62,6 +81,12 @@ pub(crate) struct DayStats {
     pub(crate) bot_views: u64,
     /// Requests to unknown paths.
     pub(crate) not_found: u64,
+    /// Views by people, per device class.
+    pub(crate) devices: BTreeMap<Device, u64>,
+    /// Views by people, per browser family.
+    pub(crate) browsers: BTreeMap<Browser, u64>,
+    /// Views by people, per operating system family.
+    pub(crate) systems: BTreeMap<OperatingSystem, u64>,
 }
 
 impl DayStats {
@@ -153,10 +178,13 @@ impl AccessStats {
         }
         let day = counters.days.entry(today).or_default();
         match hit {
-            Hit::Page { bot: true, .. } => day.bot_views += 1,
-            Hit::Page { path, bot: false } => {
+            Hit::View { path, client } => {
                 *day.views.entry(path.to_string()).or_default() += 1;
+                *day.devices.entry(client.device).or_default() += 1;
+                *day.browsers.entry(client.browser).or_default() += 1;
+                *day.systems.entry(client.system).or_default() += 1;
             }
+            Hit::BotView => day.bot_views += 1,
             Hit::NotFound => day.not_found += 1,
         }
         counters.dirty = true;
@@ -224,9 +252,19 @@ mod tests {
         (dir, clock, stats)
     }
 
+    /// The visitor of [`view`].
+    const CLIENT: Client = Client {
+        device: Device::Smartphone,
+        browser: Browser::Safari,
+        system: OperatingSystem::Ios,
+    };
+
     /// A view by a person.
     const fn view(path: &str) -> Hit<'_> {
-        Hit::Page { path, bot: false }
+        Hit::View {
+            path,
+            client: CLIENT,
+        }
     }
 
     /// Views are counted per page, crawlers and errors separately.
@@ -237,10 +275,7 @@ mod tests {
         stats.record(view("/"));
         stats.record(view("/"));
         stats.record(view("/kontakt/"));
-        stats.record(Hit::Page {
-            path: "/",
-            bot: true,
-        });
+        stats.record(Hit::BotView);
         stats.record(Hit::NotFound);
 
         let today = stats.day(stats.today());
@@ -249,6 +284,30 @@ mod tests {
         assert_eq!(today.total_views(), 3);
         assert_eq!(today.bot_views, 1);
         assert_eq!(today.not_found, 1);
+        assert_eq!(today.devices[&Device::Smartphone], 3);
+        assert_eq!(today.browsers[&Browser::Safari], 3);
+        assert_eq!(today.systems[&OperatingSystem::Ios], 3);
+    }
+
+    /// Crawlers are counted without classifying them, people with.
+    #[test]
+    fn page_hit_classifies_people_only() {
+        assert_eq!(Hit::page("/", Some("Googlebot/2.1")), Hit::BotView);
+        assert_eq!(Hit::page("/", None), Hit::BotView);
+        assert_eq!(
+            Hit::page(
+                "/",
+                Some("Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0")
+            ),
+            Hit::View {
+                path: "/",
+                client: Client {
+                    device: Device::Computer,
+                    browser: Browser::Firefox,
+                    system: OperatingSystem::Linux,
+                },
+            }
+        );
     }
 
     /// Each local day has its own counters.
@@ -304,7 +363,26 @@ mod tests {
         stats.flush().expect("flush should succeed");
 
         let reloaded = AccessStats::load(clock, dir.path());
-        assert_eq!(reloaded.day(reloaded.today()).views["/"], 1);
+        let today = reloaded.day(reloaded.today());
+        assert_eq!(today.views["/"], 1);
+        assert_eq!(today.browsers[&Browser::Safari], 1);
+    }
+
+    /// Files from before the client counters load without them.
+    #[test]
+    fn load_accepts_file_without_client_counters() {
+        let dir = TempDir::new().expect("temp dir should be created");
+        let clock = Arc::new(MockClock::default());
+        let today = clock.today();
+        let old =
+            format!(r#"{{"{today}": {{"views": {{"/": 2}}, "bot_views": 1, "not_found": 0}}}}"#);
+        fs::write(dir.path().join(FILE_NAME), old).expect("write should succeed");
+
+        let stats = AccessStats::load(clock, dir.path());
+
+        let day = stats.day(today);
+        assert_eq!(day.total_views(), 2);
+        assert!(day.devices.is_empty());
     }
 
     /// Without changes, nothing is written.

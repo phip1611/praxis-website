@@ -31,15 +31,15 @@ Public pages never run templates per request. At startup and after each edit,
 compresses them (Brotli, gzip) into an immutable snapshot. A request only
 negotiates the encoding and checks the ETag.
 
-| Module     | Responsibility                                                                |
-|------------|-------------------------------------------------------------------------------|
-| `content`  | Practice data, the page table with paths and metadata, and the editable news  |
-| `render`   | askama templates, page frame, JSON-LD, sitemap                                |
-| `delivery` | Embedded assets with hashed URLs, compression, the snapshot                   |
-| `web`      | Router, public and legacy routes, login area, middleware                      |
-| `security` | All security code: passwords, sessions, CSRF, throttling, headers, sanitizing |
-| `stats`    | Anonymous page view counters and the daily log summary                        |
-| `persist`  | Atomic JSON files in the state directory                                      |
+| Module     | Responsibility                                                                 |
+|------------|--------------------------------------------------------------------------------|
+| `content`  | Practice data, the page table with paths and metadata, and the editable news   |
+| `render`   | askama templates, page frame, JSON-LD, sitemap                                 |
+| `delivery` | Embedded assets with hashed URLs, compression, the snapshot                    |
+| `web`      | Router, public and legacy routes, login area, middleware                       |
+| `security` | All security code: passwords, sessions, CSRF, throttling, headers, sanitizing  |
+| `stats`    | Anonymous counters of page views, devices, and browsers, the daily log summary |
+| `persist`  | Atomic JSON files in the state directory                                       |
 
 State-changing handlers take `SessionForm` or `SameOriginForm` from
 `web::admin::forms`, which apply the origin and CSRF checks.
