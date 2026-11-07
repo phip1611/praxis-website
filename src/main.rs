@@ -14,6 +14,8 @@ mod config;
 mod content;
 mod logging;
 mod security;
+#[cfg(test)]
+mod test_support;
 
 use crate::cli::{Cli, Command, ServeArgs};
 use crate::config::Config;

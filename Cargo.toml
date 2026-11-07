@@ -22,6 +22,7 @@ resolver = "3"
 [dependencies]
 ammonia = { version = "4.2", default-features = false }
 clap = { version = "4.6", default-features = false, features = ["color", "derive", "env", "error-context", "help", "std", "suggestions", "usage"] }
+jiff = { version = "0.2", default-features = false, features = ["std"] }
 serde = { version = "1.0", default-features = false, features = ["derive", "std"] }
 thiserror = { version = "2.0", default-features = false, features = ["std"] }
 toml = { version = "1.1", default-features = false, features = ["parse", "serde", "std"] }

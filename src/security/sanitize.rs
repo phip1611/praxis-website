@@ -189,4 +189,13 @@ mod tests {
 
         assert_eq!(clean(&once), once);
     }
+
+    /// The bundled start page content must survive the allowlist without any
+    /// loss, or its formatting would disappear on first start.
+    #[test]
+    fn keeps_bundled_content_unchanged() {
+        let seed = include_str!("../../content/aktuelle-informationen.html").trim();
+
+        assert_eq!(clean(seed), seed);
+    }
 }
