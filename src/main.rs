@@ -13,6 +13,7 @@ mod cli;
 mod config;
 mod content;
 mod logging;
+mod security;
 
 use crate::cli::{Cli, Command, ServeArgs};
 use crate::config::Config;
