@@ -17,7 +17,7 @@ pub(crate) enum BaseUrlError {
     /// The URL has credentials, a query, or a fragment.
     #[error("the URL must not contain credentials, a query, or a fragment")]
     ExtraParts,
-    /// The URL has a path.
+    /// The URL has a path. Only the analytics URL may have one.
     #[error("the URL must not contain a path")]
     Path,
 }
@@ -68,7 +68,7 @@ impl BaseUrl {
 ///
 /// Returns [`BaseUrlError`] if the URL isn't an absolute `http(s)` URL or if it
 /// has credentials, a query, or a fragment.
-fn parse_origin_and_path(url: &str) -> Result<(String, String), BaseUrlError> {
+pub(super) fn parse_origin_and_path(url: &str) -> Result<(String, String), BaseUrlError> {
     let url = Url::parse(url)?;
     if !matches!(url.scheme(), "http" | "https") {
         return Err(BaseUrlError::Scheme);

@@ -15,6 +15,8 @@ use std::sync::Arc;
 
 /// The stylesheet of all pages.
 pub(crate) const STYLESHEET: &str = "style.css";
+/// Starts the Matomo tracking.
+pub(crate) const ANALYTICS_SCRIPT: &str = "analytics.js";
 /// The favicon.
 pub(crate) const ICON_32: &str = "images/cropped-Logo-und-Favicon-32x32.png";
 /// The icon for iOS home screens.
@@ -165,7 +167,14 @@ mod tests {
     fn named_assets_exist() {
         let catalog = AssetCatalog::new();
 
-        for name in [STYLESHEET, ICON_32, ICON_180, ICON_192, ICON_270] {
+        for name in [
+            STYLESHEET,
+            ANALYTICS_SCRIPT,
+            ICON_32,
+            ICON_180,
+            ICON_192,
+            ICON_270,
+        ] {
             assert!(catalog.url(name).starts_with("/assets/"), "{name}");
         }
     }

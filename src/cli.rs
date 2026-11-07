@@ -5,7 +5,7 @@
 //! Every option can also be set with an environment variable, which suits
 //! systemd units.
 
-use crate::config::BaseUrl;
+use crate::config::{BaseUrl, MatomoUrl};
 use clap::{Args, Parser, Subcommand};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
@@ -39,6 +39,19 @@ pub(crate) struct ServeArgs {
     /// The public URL of the site, e.g., `https://praxis-dirkschuster.de`.
     #[arg(long, env = "PRAXIS_BASE_URL", value_parser = BaseUrl::parse)]
     pub(crate) base_url: BaseUrl,
+
+    /// The URL of the Matomo installation, e.g., `https://stats.example.com/`.
+    #[arg(
+        long,
+        env = "PRAXIS_MATOMO_URL",
+        value_parser = MatomoUrl::parse,
+        requires = "matomo_site_id"
+    )]
+    pub(crate) matomo_url: Option<MatomoUrl>,
+
+    /// The ID of this site in Matomo.
+    #[arg(long, env = "PRAXIS_MATOMO_SITE_ID", requires = "matomo_url")]
+    pub(crate) matomo_site_id: Option<u32>,
 }
 
 #[cfg(test)]
@@ -96,6 +109,19 @@ mod tests {
     fn serve_requires_explicit_settings() {
         assert_eq!(
             parse_error(&["praxis-website", "serve"]),
+            ErrorKind::MissingRequiredArgument
+        );
+    }
+
+    /// Analytics need both the URL and the site ID.
+    #[test]
+    fn analytics_options_come_in_pairs() {
+        assert_eq!(
+            parse_error(&[SERVE, &["--matomo-url", "https://stats.test/"]].concat()),
+            ErrorKind::MissingRequiredArgument
+        );
+        assert_eq!(
+            parse_error(&[SERVE, &["--matomo-site-id", "9"]].concat()),
             ErrorKind::MissingRequiredArgument
         );
     }

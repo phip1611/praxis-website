@@ -17,6 +17,7 @@ use tracing::info;
 pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
     info!(
         public_url = config.base_url.origin(),
+        analytics = config.analytics.is_some(),
         "starting praxis-website {}",
         env!("CARGO_PKG_VERSION")
     );

@@ -49,7 +49,13 @@ impl AppState {
         let renderer = Arc::new(SiteRenderer::new(config, assets));
         let site = Arc::new(renderer.render_site(&news)?);
         let https = config.base_url.is_https();
-        let security_headers = Arc::new(SecurityHeaders::new(https));
+        let security_headers = Arc::new(SecurityHeaders::new(
+            https,
+            config
+                .analytics
+                .as_ref()
+                .map(|analytics| analytics.origin()),
+        ));
         Ok(Self {
             site,
             security_headers,

@@ -10,7 +10,7 @@ mod public;
 mod seo;
 pub(crate) mod templates;
 
-use crate::config::{BaseUrl, Config};
+use crate::config::{Analytics, BaseUrl, Config};
 use crate::content::pages::HOME_PATH;
 use crate::content::site::SITE;
 use crate::delivery::assets::{self, AssetCatalog};
@@ -32,6 +32,8 @@ pub(crate) enum RenderError {
 pub(crate) struct SiteRenderer {
     /// The public URL of the site.
     base_url: BaseUrl,
+    /// The analytics configuration.
+    analytics: Option<Analytics>,
     /// The embedded files.
     assets: Arc<AssetCatalog>,
 }
@@ -41,6 +43,7 @@ impl SiteRenderer {
     pub(crate) fn new(config: &Config, assets: Arc<AssetCatalog>) -> Self {
         Self {
             base_url: config.base_url.clone(),
+            analytics: config.analytics.clone(),
             assets,
         }
     }
@@ -103,6 +106,7 @@ impl SiteRenderer {
                 // Windows needs an absolute URL here.
                 tile: self.asset_url(assets::ICON_270),
             },
+            analytics: None,
         }
     }
 

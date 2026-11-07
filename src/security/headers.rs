@@ -39,12 +39,18 @@ pub(crate) struct SecurityHeaders {
 }
 
 impl SecurityHeaders {
-    /// Creates the headers.
-    pub(crate) fn new(https: bool) -> Self {
-        let policy = content_security_policy(https);
+    /// Creates the headers. `analytics_origin` is the origin of the analytics
+    /// server, which needs its own exception in the policy.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `analytics_origin` contains invalid header characters. The
+    /// configuration validates it before.
+    pub(crate) fn new(https: bool, analytics_origin: Option<&str>) -> Self {
+        let policy = content_security_policy(https, analytics_origin);
         Self {
             content_security_policy: HeaderValue::from_str(&policy)
-                .expect("the policy should be a valid header"),
+                .expect("a validated origin should form a valid header"),
             strict_transport_security: https,
         }
     }
@@ -94,7 +100,8 @@ impl SecurityHeaders {
 /// Scripts and styles only load as files from this origin, without any inline
 /// code. So even if HTML injection slipped through the sanitizer, it couldn't
 /// execute scripts. Over HTTPS, browsers also upgrade any `http://` resource.
-fn content_security_policy(https: bool) -> String {
+fn content_security_policy(https: bool, analytics_origin: Option<&str>) -> String {
+    let external = analytics_origin.map_or_else(String::new, |origin| format!(" {origin}"));
     let upgrade = if https {
         "; upgrade-insecure-requests"
     } else {
@@ -102,9 +109,9 @@ fn content_security_policy(https: bool) -> String {
     };
     format!(
         "default-src 'none'; \
-         script-src 'self'; \
-         connect-src 'self'; \
-         img-src 'self'; \
+         script-src 'self'{external}; \
+         connect-src 'self'{external}; \
+         img-src 'self'{external}; \
          style-src 'self'; \
          base-uri 'none'; \
          form-action 'self'; \
@@ -137,7 +144,7 @@ mod tests {
     /// The default policy allows nothing inline and nothing external.
     #[test]
     fn default_policy_is_strict() {
-        let map = applied(&SecurityHeaders::new(true));
+        let map = applied(&SecurityHeaders::new(true, None));
 
         assert!(csp(&map).contains("default-src 'none'"));
         assert!(csp(&map).contains("script-src 'self';"));
@@ -146,12 +153,23 @@ mod tests {
         assert!(!csp(&map).contains("unsafe-eval"));
     }
 
+    /// The analytics origin is allowed for scripts, requests, and images only.
+    #[test]
+    fn analytics_origin_gets_minimal_exception() {
+        let map = applied(&SecurityHeaders::new(true, Some("https://stats.test")));
+
+        assert!(csp(&map).contains("script-src 'self' https://stats.test;"));
+        assert!(csp(&map).contains("connect-src 'self' https://stats.test;"));
+        assert!(csp(&map).contains("img-src 'self' https://stats.test;"));
+        assert!(csp(&map).contains("style-src 'self';"));
+    }
+
     /// HSTS and upgrading requests over plain HTTP would break local dev on
     /// the same host name, so they're only sent over HTTPS.
     #[test]
     fn https_only_directives() {
-        let https = applied(&SecurityHeaders::new(true));
-        let http = applied(&SecurityHeaders::new(false));
+        let https = applied(&SecurityHeaders::new(true, None));
+        let http = applied(&SecurityHeaders::new(false, None));
 
         assert!(https.contains_key(header::STRICT_TRANSPORT_SECURITY));
         assert!(csp(&https).ends_with("; upgrade-insecure-requests"));
@@ -166,7 +184,7 @@ mod tests {
         let mut map = HeaderMap::new();
         map.insert(header::CONTENT_TYPE, HeaderValue::from_static("image/png"));
 
-        SecurityHeaders::new(true).apply(&mut map);
+        SecurityHeaders::new(true, None).apply(&mut map);
 
         assert!(!map.contains_key(header::CONTENT_SECURITY_POLICY));
         assert_eq!(map[header::X_CONTENT_TYPE_OPTIONS], "nosniff");
@@ -175,7 +193,7 @@ mod tests {
     /// Other sites may embed public files like images, but not HTML pages.
     #[test]
     fn only_non_html_may_be_embedded_cross_origin() {
-        let headers = SecurityHeaders::new(true);
+        let headers = SecurityHeaders::new(true, None);
         let mut image = HeaderMap::new();
         image.insert(header::CONTENT_TYPE, HeaderValue::from_static("image/png"));
 
@@ -191,7 +209,7 @@ mod tests {
     /// All hardening headers are present.
     #[test]
     fn applies_static_headers() {
-        let map = applied(&SecurityHeaders::new(false));
+        let map = applied(&SecurityHeaders::new(false, None));
 
         assert_eq!(map[header::X_CONTENT_TYPE_OPTIONS], "nosniff");
         assert_eq!(map[header::X_FRAME_OPTIONS], "DENY");
