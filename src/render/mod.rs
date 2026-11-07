@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Renders the page frame.
+//! Renders the pages from their templates.
 
 #[expect(dead_code, reason = "used by code that a later commit adds")]
 mod layout;
+#[expect(dead_code, reason = "used by code that a later commit adds")]
+mod public;
 pub(crate) mod templates;
 
 use crate::config::{BaseUrl, Config};
@@ -91,6 +93,8 @@ impl SiteRenderer {
             title,
             description: description.to_string(),
             robots: ROBOTS_PRIVATE,
+            canonical: None,
+            open_graph: None,
             site_title_is_heading: false,
             site_name: &SITE.practice.site_name,
             tagline: &SITE.practice.tagline,
