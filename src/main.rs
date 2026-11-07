@@ -6,11 +6,13 @@
 //! Thalheim/Erzgebirge.
 
 mod cli;
+mod logging;
 
 use crate::cli::Cli;
 use clap::Parser;
 
-/// Parses the command line.
+/// Parses the command line and sets up logging.
 fn main() {
     let _cli = Cli::parse();
+    logging::init();
 }
