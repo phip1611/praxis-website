@@ -8,11 +8,12 @@ use crate::content::news::NewsDocument;
 use crate::delivery::assets;
 use crate::render::layout::Layout;
 use crate::render::templates::{
-    EditorTemplate, LoginTemplate, Notice, StatsDayRow, StatsPageRow, StatsTemplate,
+    EditorTemplate, LoginTemplate, Notice, PasswordTemplate, StatsDayRow, StatsPageRow,
+    StatsTemplate,
 };
 use crate::render::{RenderError, SiteRenderer};
 use crate::security::credentials::MAX_USERNAME_BYTES;
-use crate::security::password::MAX_PASSWORD_BYTES;
+use crate::security::password::{MAX_PASSWORD_BYTES, MIN_PASSWORD_CHARS};
 use crate::security::sanitize::SanitizedHtml;
 use crate::stats::{DayStats, tracked_pages};
 use askama::Template;
@@ -80,6 +81,32 @@ impl SiteRenderer {
             modified_by: &view.stored.modified_by,
             csrf: view.csrf,
             notice: view.notice.as_ref(),
+        }
+        .render()?)
+    }
+
+    /// Renders the form to change the password.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`RenderError`] if the template fails.
+    pub(crate) fn render_password(
+        &self,
+        username: &str,
+        csrf: &str,
+        notice: Option<&Notice>,
+    ) -> Result<String, RenderError> {
+        let mut layout = self.private_layout("Passwort ändern", Vec::new());
+        if notice.is_some_and(Notice::is_error) {
+            mark_error(&mut layout);
+        }
+        Ok(PasswordTemplate {
+            layout: &layout,
+            username,
+            csrf,
+            notice,
+            min_password: MIN_PASSWORD_CHARS,
+            max_password: MAX_PASSWORD_BYTES,
         }
         .render()?)
     }

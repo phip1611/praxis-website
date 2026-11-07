@@ -35,10 +35,6 @@
 //! - [`headers`]: Security headers such as the Content Security Policy.
 //! - [`sanitize`]: The allowlist for user-provided HTML.
 
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "used by code that a later commit adds")
-)]
 pub(crate) mod authenticator;
 pub(crate) mod client_ip;
 pub(crate) mod cookie;
@@ -47,10 +43,6 @@ mod csrf;
 pub(crate) mod headers;
 pub(crate) mod origin;
 pub(crate) mod password;
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "used by code that a later commit adds")
-)]
 pub(crate) mod password_overrides;
 mod rate_limit;
 pub(crate) mod sanitize;

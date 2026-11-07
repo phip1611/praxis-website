@@ -34,10 +34,16 @@ the proxy needs no extra headers or compression settings.
 ## Accounts
 
 The accounts file has one `username:hash` line per account. The hash is
-created with `praxis-website hash-password <username>`, also to change a
-password. Changes take effect on the next start of the service, which logs
-out everyone. Leaked hashes are fine: Argon2id and the 15-character minimum
-make them practically uncrackable.
+created with `praxis-website hash-password <username>`. Changes take effect on
+the next start of the service, which logs out everyone. Leaked hashes are
+fine: Argon2id and the 15-character minimum make them practically
+uncrackable. The service can't add accounts, as it can write its state
+directory only.
+
+Users change their password in the login area. The new hash is stored in the
+state directory and wins over the configured one until the configured hash
+changes. So to reset a forgotten password, configure a new hash. The service
+can't send e-mails, the login area says so.
 
 ## State
 
@@ -49,6 +55,7 @@ contains small JSON files. Back them up; all are written atomically.
 - `statistik.json`: page views per day and page, kept for a year. If the file
   can't be read, the service starts over with empty statistics and keeps the
   old file as `statistik.json.unreadable`.
+- `passwoerter.json`: hashes of passwords changed in the login area.
 
 Days in the statistics and times in the login area use the time zone of the
 system, so set `time.timeZone = "Europe/Berlin";` on NixOS.

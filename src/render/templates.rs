@@ -198,3 +198,21 @@ pub(super) struct StatsTemplate<'a> {
     /// The pages, in navigation order.
     pub(super) pages: &'a [StatsPageRow],
 }
+
+/// The form to change the password.
+#[derive(Debug, Template)]
+#[template(path = "admin/password.html")]
+pub(super) struct PasswordTemplate<'a> {
+    /// The page frame.
+    pub(super) layout: &'a Layout,
+    /// The logged-in account.
+    pub(super) username: &'a str,
+    /// The CSRF token of the session.
+    pub(super) csrf: &'a str,
+    /// The message to show, if any.
+    pub(super) notice: Option<&'a Notice>,
+    /// The minimum length of new passwords.
+    pub(super) min_password: usize,
+    /// The length limit of the password fields.
+    pub(super) max_password: usize,
+}
