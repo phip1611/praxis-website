@@ -13,8 +13,14 @@
 //!
 //! # Overview
 //!
+//! - [`token`]: Random secrets.
 //! - [`headers`]: Security headers such as the Content Security Policy.
 //! - [`sanitize`]: The allowlist for the HTML of the news.
 
 pub(crate) mod headers;
 pub(crate) mod sanitize;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
+pub(crate) mod token;
