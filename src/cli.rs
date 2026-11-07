@@ -5,6 +5,7 @@
 //! Every option can also be set with an environment variable, which suits
 //! systemd units.
 
+use crate::config::BaseUrl;
 use clap::{Args, Parser, Subcommand};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
@@ -36,14 +37,15 @@ pub(crate) struct ServeArgs {
     pub(crate) bind: SocketAddr,
 
     /// The public URL of the site, e.g., `https://praxis-dirkschuster.de`.
-    #[arg(long, env = "PRAXIS_BASE_URL")]
-    pub(crate) base_url: String,
+    #[arg(long, env = "PRAXIS_BASE_URL", value_parser = BaseUrl::parse)]
+    pub(crate) base_url: BaseUrl,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use clap::CommandFactory;
+    use clap::error::ErrorKind;
 
     /// The minimal command line of the server.
     const SERVE: &[&str] = &[
@@ -71,5 +73,30 @@ mod tests {
         let args = serve_args(SERVE);
 
         assert_eq!(args.bind, DEFAULT_BIND);
+    }
+
+    /// Returns the kind of the error that parsing `args` fails with.
+    fn parse_error(args: &[&str]) -> ErrorKind {
+        Cli::try_parse_from(args)
+            .expect_err("parsing should fail")
+            .kind()
+    }
+
+    /// Invalid URLs stop the start.
+    #[test]
+    fn rejects_invalid_base_url() {
+        assert_eq!(
+            parse_error(&["praxis-website", "serve", "--base-url", "praxis.test"]),
+            ErrorKind::ValueValidation
+        );
+    }
+
+    /// The server refuses to start without its settings.
+    #[test]
+    fn serve_requires_explicit_settings() {
+        assert_eq!(
+            parse_error(&["praxis-website", "serve"]),
+            ErrorKind::MissingRequiredArgument
+        );
     }
 }
