@@ -10,4 +10,8 @@ pub(crate) mod assets;
 pub(crate) mod cached;
 mod compression;
 mod encoding;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
 pub(crate) mod snapshot;
