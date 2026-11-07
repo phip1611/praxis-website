@@ -12,6 +12,8 @@
 
 mod app;
 mod cli;
+#[expect(dead_code, reason = "used by code that a later commit adds")]
+mod clock;
 mod config;
 mod content;
 mod delivery;

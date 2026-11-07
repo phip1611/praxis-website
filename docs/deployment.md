@@ -21,6 +21,9 @@ Run the binary with these environment variables (or the flags of
 The service sends its own security headers and precompressed responses, so
 the proxy needs no extra headers or compression settings.
 
+Days in the statistics and times in the login area use the time zone of the
+system, so set `time.timeZone = "Europe/Berlin";` on NixOS.
+
 ## Operation
 
 ```sh
