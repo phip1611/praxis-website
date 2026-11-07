@@ -20,6 +20,7 @@
 //! - [`credentials`]: The accounts file and account lookup.
 //! - [`client_ip`]: The client address behind the reverse proxy.
 //! - [`throttle`]: Limits failed logins per client and per account.
+//! - [`rate_limit`]: Limits password checks of all clients together.
 //! - [`session`]: Server-side sessions with idle and absolute timeouts.
 //! - [`authenticator`]: The login flow, combining the parts above.
 //! - [`csrf`]: Per-session tokens for state-changing requests.
@@ -40,6 +41,11 @@ mod csrf;
 pub(crate) mod headers;
 pub(crate) mod origin;
 pub(crate) mod password;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
+mod rate_limit;
 pub(crate) mod sanitize;
 pub(crate) mod session;
 #[cfg_attr(
