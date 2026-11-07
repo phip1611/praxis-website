@@ -1,0 +1,24 @@
+[package]
+name = "praxis-website"
+description = """
+Website of the general practice Dipl.-Med. Dirk Schuster in Thalheim/Erzgebirge
+with a small login area to edit the current information on the start page.
+"""
+version = "0.1.0"
+edition = "2024"
+keywords = ["website", "axum", "askama"]
+categories = ["web-programming::http-server"]
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+homepage = "https://praxis-dirkschuster.de"
+repository = "https://github.com/phip1611/praxis-website"
+authors = [
+  "Philipp Schuster <phip1611@gmail.com>",
+]
+publish = false
+rust-version = "1.97"
+resolver = "3"
+
+[dependencies]
+
+
