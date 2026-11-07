@@ -17,6 +17,11 @@ mod content;
 mod delivery;
 mod hex;
 mod logging;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
+mod persist;
 mod render;
 mod security;
 mod server;
