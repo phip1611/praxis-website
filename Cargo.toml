@@ -21,7 +21,9 @@ resolver = "3"
 
 [dependencies]
 ammonia = { version = "4.2", default-features = false }
+brotli = { version = "9.1", default-features = false, features = ["std"] }
 clap = { version = "4.6", default-features = false, features = ["color", "derive", "env", "error-context", "help", "std", "suggestions", "usage"] }
+flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
 jiff = { version = "0.2", default-features = false, features = ["std"] }
 serde = { version = "1.0", default-features = false, features = ["derive", "std"] }
 thiserror = { version = "2.0", default-features = false, features = ["std"] }
@@ -67,3 +69,13 @@ multiple_crate_versions = "allow"
 # Contradicts `unreachable_pub`, which wants `pub(crate)` in a binary crate.
 redundant_pub_crate = "allow"
 
+# These crates run password hashing and compression, which take seconds when
+# unoptimized. Optimizing them keeps "cargo run" and "cargo test" fast.
+[profile.dev.package.brotli]
+opt-level = 3
+[profile.dev.package.brotli-decompressor]
+opt-level = 3
+[profile.dev.package.alloc-no-stdlib]
+opt-level = 3
+[profile.dev.package.miniz_oxide]
+opt-level = 3

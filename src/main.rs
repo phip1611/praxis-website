@@ -12,6 +12,7 @@ mod cli;
 )]
 mod config;
 mod content;
+mod delivery;
 mod logging;
 mod security;
 #[cfg(test)]
