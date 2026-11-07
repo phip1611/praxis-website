@@ -4,3 +4,4 @@
 
 pub(super) mod request_log;
 pub(super) mod security_headers;
+pub(super) mod timeout;

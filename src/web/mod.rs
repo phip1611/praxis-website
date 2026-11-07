@@ -13,6 +13,9 @@ use axum::middleware::{from_fn, from_fn_with_state};
 pub(crate) fn router(state: AppState) -> Router {
     Router::new()
         .fallback(public::serve)
+        // The last layer is the outermost, so timeouts get security headers
+        // and are logged.
+        .layer(from_fn(middleware::timeout::limit))
         .layer(from_fn_with_state(
             state.clone(),
             middleware::security_headers::apply,
