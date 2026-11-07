@@ -1,0 +1,21 @@
+name: QA
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  # Keep a result for every commit on main.
+  cancel-in-progress: ${{ github.event_name != 'push' }}
+
+jobs:
+  spellcheck:
+    name: Spellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Executes "typos ."
+      - uses: crate-ci/typos@v1.52.0
