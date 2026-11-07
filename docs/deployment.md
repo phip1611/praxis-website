@@ -1,0 +1,32 @@
+# Deployment Guide
+
+How to run the service in production.
+
+The service speaks plain HTTP on localhost and expects a reverse proxy on the
+same host that terminates TLS.
+
+## Configuration
+
+Run the binary with these environment variables (or the flags of
+`praxis-website --help`), ideally as a systemd service with `DynamicUser=`.
+
+| Variable                | Default          | Purpose                           |
+|-------------------------|------------------|-----------------------------------|
+| `PRAXIS_BASE_URL`       | required         | Public URL for canonical links    |
+| `PRAXIS_BIND`           | `127.0.0.1:8080` | Listen address                    |
+| `PRAXIS_MATOMO_URL`     | off              | Matomo installation for analytics |
+| `PRAXIS_MATOMO_SITE_ID` | off              | Matomo site ID                    |
+| `RUST_LOG`              | `info`           | Log filter, e.g., `debug`         |
+
+The service sends its own security headers and precompressed responses, so
+the proxy needs no extra headers or compression settings.
+
+## Operation
+
+```sh
+journalctl -u praxis-website -f            # Follow the log
+journalctl -u praxis-website -p warning    # Only problems
+```
+
+The log has one line per request (method, path, status, duration). Client
+addresses are never logged.
