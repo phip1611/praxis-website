@@ -11,3 +11,8 @@
     expect(dead_code, reason = "used by code that a later commit adds")
 )]
 mod compression;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
+mod encoding;
