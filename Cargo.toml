@@ -21,6 +21,7 @@ resolver = "3"
 
 [dependencies]
 ammonia = { version = "4.2", default-features = false }
+argon2 = { version = "0.6", default-features = false, features = ["alloc", "getrandom", "password-hash"] }
 askama = { version = "0.16", default-features = false, features = ["config", "derive", "serde_json", "std"] }
 axum = { version = "0.8", default-features = false, features = ["http1", "tokio"] }
 brotli = { version = "9.1", default-features = false, features = ["std"] }
@@ -91,6 +92,10 @@ strip = "debuginfo"
 
 # These crates run password hashing and compression, which take seconds when
 # unoptimized. Optimizing them keeps "cargo dev" and "cargo test" fast.
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3
 [profile.dev.package.brotli]
 opt-level = 3
 [profile.dev.package.brotli-decompressor]
