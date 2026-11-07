@@ -5,6 +5,7 @@
 
 use crate::clock::local_time_zone;
 use crate::content::news::NewsDocument;
+use crate::delivery::assets;
 use crate::render::layout::Layout;
 use crate::render::templates::{
     EditorTemplate, LoginTemplate, Notice, StatsDayRow, StatsPageRow, StatsTemplate,
@@ -65,7 +66,8 @@ impl SiteRenderer {
     ///
     /// Returns [`RenderError`] if the template fails.
     pub(crate) fn render_editor(&self, view: &EditorView<'_>) -> Result<String, RenderError> {
-        let mut layout = self.private_layout("Aktuelle Informationen bearbeiten", Vec::new());
+        let scripts = vec![self.assets.url(assets::EDITOR_SCRIPT).to_string()];
+        let mut layout = self.private_layout("Aktuelle Informationen bearbeiten", scripts);
         if view.notice.as_ref().is_some_and(Notice::is_error) {
             mark_error(&mut layout);
         }

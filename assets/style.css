@@ -423,6 +423,60 @@ button:focus {
   color: var(--color-error);
 }
 
+/* The formatting buttons above the visual editor. */
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em;
+  margin: 1em 0 0.5em;
+}
+
+/*
+ * The editor script shows the visual editor and hides the HTML field. The
+ * `hidden` attribute must win over the `display` values above.
+ */
+.editor-toolbar[hidden],
+.editor-surface[hidden],
+#editor-source[hidden] {
+  display: none;
+}
+
+/* Secondary buttons, so that "Speichern" stays the main action. */
+.editor-toolbar button {
+  padding: 0.35em 0.8em;
+  border-color: var(--color-field-border);
+  background: #fff;
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+/* Overrides the dark hover of primary buttons. */
+.editor-toolbar button:hover,
+.editor-toolbar button:focus {
+  background: var(--color-surface);
+  color: var(--color-heading);
+}
+
+/* Shows that the selection already has this formatting, not only by color. */
+.editor-toolbar button[aria-pressed="true"] {
+  border-color: var(--color-heading);
+  background: var(--color-surface);
+  box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.2);
+}
+
+/* The visual editor looks like a text field, with room for several lines. */
+.editor-surface {
+  min-block-size: 16em;
+  padding: 1em;
+  border: 1px solid var(--color-field-border);
+  border-radius: 3px;
+}
+
+/* The editor is the main field, so its focus is always visible. */
+.editor-surface:focus {
+  outline: 2px solid var(--color-link);
+}
+
 /* The daily bars in the statistics fill their column. */
 .stats-table meter {
   inline-size: 100%;

@@ -13,8 +13,51 @@
     <form method="post" action="/admin/" id="news-form" class="admin-form">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <input type="hidden" name="revision" value="{{ revision }}">
-      <label for="html">Text der Startseite (HTML)</label>
-      <textarea id="html" name="html" rows="16">{{ html }}</textarea>
+      <div
+        class="editor-toolbar"
+        role="toolbar"
+        aria-label="Formatierung"
+        aria-controls="editor"
+        hidden>
+        <button
+          type="button"
+          data-command="bold"
+          title="Fett (Strg+B)"
+          aria-keyshortcuts="Control+B"><strong>Fett</strong></button>
+        <button
+          type="button"
+          data-command="red"
+          title="Markierten Text rot färben oder Färbung entfernen">
+          <span class="text-red">Rot</span>
+        </button>
+        <button
+          type="button"
+          data-command="center"
+          title="Absatz zentrieren oder linksbündig ausrichten">Zentriert</button>
+        <button type="button" data-command="rule" title="Trennlinie einfügen">Linie</button>
+        <button type="button" data-command="list" title="Aufzählung">Liste</button>
+        <button type="button" data-command="link" title="Markierten Text verlinken">Link</button>
+        <button
+          type="button"
+          data-command="clear"
+          title="Formatierung des markierten Texts entfernen">Formatierung entfernen</button>
+      </div>
+      <div
+        id="editor"
+        class="entry-content editor-surface"
+        contenteditable="true"
+        role="textbox"
+        aria-multiline="true"
+        aria-label="Text der Startseite"
+        spellcheck="true"
+        lang="de"
+        hidden>
+        
+      </div>
+      <div id="editor-source">
+        <label for="html">Text der Startseite (HTML)</label>
+        <textarea id="html" name="html" rows="16">{{ html }}</textarea>
+      </div>
       <div class="admin-actions">
         <button type="submit">Speichern und veröffentlichen</button>
         <a href="/" target="_blank" rel="noopener">Startseite ansehen<span class="visually-hidden">

@@ -57,6 +57,12 @@ recreated by hand, including the WebP variants (`cwebp -q 80 -m 6`).
 `when` arm in `templates/page.html`. Navigation, sitemap, statistics, and the
 route tests pick it up from that file.
 
+**A new editor feature:** the editor (`assets/editor.js`) may only produce
+markup that passes the allowlist in `src/security/sanitize.rs`. Formatting
+needs a CSS class, not a `style` attribute, as the Content Security Policy
+forbids inline styles: add the class to the allowlist, to `assets/style.css`,
+and the button to `templates/admin/editor.html`.
+
 **An old URL that should redirect:** add it to `src/web/legacy.rs`. A test
 checks that every target exists.
 
