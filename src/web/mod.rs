@@ -7,7 +7,7 @@ mod public;
 
 use crate::app::AppState;
 use axum::Router;
-use axum::middleware::from_fn_with_state;
+use axum::middleware::{from_fn, from_fn_with_state};
 
 /// Builds the router with all routes and middleware.
 pub(crate) fn router(state: AppState) -> Router {
@@ -17,5 +17,6 @@ pub(crate) fn router(state: AppState) -> Router {
             state.clone(),
             middleware::security_headers::apply,
         ))
+        .layer(from_fn(middleware::request_log::log))
         .with_state(state)
 }
