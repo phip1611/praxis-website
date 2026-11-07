@@ -16,13 +16,5 @@
 //! - [`headers`]: Security headers such as the Content Security Policy.
 //! - [`sanitize`]: The allowlist for the HTML of the news.
 
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "used by code that a later commit adds")
-)]
 pub(crate) mod headers;
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "used by code that a later commit adds")
-)]
 pub(crate) mod sanitize;

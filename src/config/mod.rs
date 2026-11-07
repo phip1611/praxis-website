@@ -2,10 +2,6 @@
 
 //! The validated runtime configuration.
 
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "used by code that a later commit adds")
-)]
 mod base_url;
 
 pub(crate) use base_url::BaseUrl;

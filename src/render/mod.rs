@@ -5,15 +5,7 @@
 //! `public` renders the precomputed snapshot for visitors. This file has the
 //! page frame.
 
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "used by code that a later commit adds")
-)]
 mod layout;
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "used by code that a later commit adds")
-)]
 mod public;
 mod seo;
 pub(crate) mod templates;

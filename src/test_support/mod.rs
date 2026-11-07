@@ -2,8 +2,12 @@
 
 //! Fixtures and mocks for the unit tests.
 //!
-//! They keep the tests short, so that a test only contains the interesting
-//! steps and checks.
+//! They keep the tests short: a test creates a [`TestApp`] or a mock and then
+//! only contains the interesting steps and checks.
+
+mod app;
+
+pub(crate) use app::TestApp;
 
 use crate::cli::{DEFAULT_BIND, ServeArgs};
 use crate::config::{BaseUrl, Config};
