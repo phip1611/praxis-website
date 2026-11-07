@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+  <article class="entry">
+    <h2 class="entry-title">{{ heading }}</h2>
+    <div class="entry-content">
+      {{ news|safe }}
+    </div>
+  </article>
+{% endblock %}

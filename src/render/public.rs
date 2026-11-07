@@ -2,10 +2,13 @@
 
 //! Renders the public pages.
 
-use crate::content::pages::{HOME_PATH, PageImage};
+use crate::content::news::NewsDocument;
+use crate::content::pages::{HOME_PATH, PageImage, home_title};
 use crate::content::site::SITE;
-use crate::render::SiteRenderer;
 use crate::render::layout::{Layout, OpenGraph, OpenGraphImage, OpenGraphKind, ROBOTS_PUBLIC};
+use crate::render::templates::HomeTemplate;
+use crate::render::{RenderError, SiteRenderer};
+use askama::Template;
 
 /// The data of a public page that differs between pages.
 #[derive(Debug)]
@@ -27,6 +30,26 @@ struct PublicPage<'a> {
 }
 
 impl SiteRenderer {
+    /// Renders the start page.
+    fn render_home(&self, news: &NewsDocument) -> Result<String, RenderError> {
+        let modified = news.modified_at.to_string();
+        let layout = self.public_layout(&PublicPage {
+            path: HOME_PATH,
+            title: home_title(),
+            og_title: SITE.practice.site_name.to_string(),
+            description: &SITE.home.description,
+            og_kind: OpenGraphKind::Website,
+            modified: Some(&modified),
+            image: None,
+        });
+        Ok(HomeTemplate {
+            layout: &layout,
+            heading: &SITE.home.news_heading,
+            news: &news.html,
+        }
+        .render()?)
+    }
+
     /// Returns the frame of a public page with all search engine metadata.
     fn public_layout(&self, page: &PublicPage<'_>) -> Layout {
         let url = self.base_url.join(page.path);
