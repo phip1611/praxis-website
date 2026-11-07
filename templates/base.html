@@ -30,6 +30,9 @@
     <link rel="icon" href="{{ layout.assets.icon_192 }}" sizes="192x192">
     <link rel="apple-touch-icon" href="{{ layout.assets.apple_touch }}">
     <meta name="msapplication-TileImage" content="{{ layout.assets.tile }}">
+    {%- if let Some(json_ld) = layout.json_ld %}
+      <script type="application/ld+json">{{ json_ld|json|safe }}</script>
+    {%- endif %}
   </head>
   <body>
     <a class="skip-link" href="#inhalt">Zum Inhalt springen</a>

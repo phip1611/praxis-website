@@ -3,6 +3,7 @@
 //! The data of the page frame: head, header, navigation, and footer.
 
 use crate::content::practice::PhoneNumber;
+use serde_json::Value;
 
 /// The `robots` value of public pages, as on the WordPress site.
 pub(super) const ROBOTS_PUBLIC: &str =
@@ -97,6 +98,8 @@ pub(super) struct Layout {
     pub(super) canonical: Option<String>,
     /// The Open Graph data, for public pages.
     pub(super) open_graph: Option<OpenGraph>,
+    /// The JSON-LD structured data.
+    pub(super) json_ld: Option<Value>,
     /// Whether the site name is the `<h1>`. Only on the start page, where the
     /// news heading is the `<h2>`.
     pub(super) site_title_is_heading: bool,

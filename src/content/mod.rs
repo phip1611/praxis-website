@@ -12,7 +12,10 @@ pub(crate) mod news;
     expect(dead_code, reason = "used by code that a later commit adds")
 )]
 pub(crate) mod pages;
-#[expect(dead_code, reason = "used by code that a later commit adds")]
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
 pub(crate) mod practice;
 #[cfg_attr(
     not(test),

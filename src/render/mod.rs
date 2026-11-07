@@ -10,8 +10,12 @@
     expect(dead_code, reason = "used by code that a later commit adds")
 )]
 mod layout;
-#[expect(dead_code, reason = "used by code that a later commit adds")]
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
 mod public;
+mod seo;
 pub(crate) mod templates;
 
 use crate::config::{BaseUrl, Config};
@@ -89,6 +93,7 @@ impl SiteRenderer {
             robots: ROBOTS_PRIVATE,
             canonical: None,
             open_graph: None,
+            json_ld: None,
             site_title_is_heading: false,
             site_name: &SITE.practice.site_name,
             tagline: &SITE.practice.tagline,
@@ -107,5 +112,10 @@ impl SiteRenderer {
                 tile: self.asset_url(assets::ICON_270),
             },
         }
+    }
+
+    /// Returns the logo for the structured data and previews.
+    fn logo_url(&self) -> String {
+        self.asset_url(&SITE.logo.asset)
     }
 }
