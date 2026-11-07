@@ -20,5 +20,5 @@ rust-version = "1.97"
 resolver = "3"
 
 [dependencies]
-
+clap = { version = "4.6", default-features = false, features = ["color", "derive", "env", "error-context", "help", "std", "suggestions", "usage"] }
 
