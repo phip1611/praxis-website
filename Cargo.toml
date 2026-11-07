@@ -79,6 +79,14 @@ multiple_crate_versions = "allow"
 # Contradicts `unreachable_pub`, which wants `pub(crate)` in a binary crate.
 redundant_pub_crate = "allow"
 
+[profile.release]
+codegen-units = 1
+lto = true
+# Optimized for size: all responses are precomputed, so request handling
+# barely depends on code speed.
+opt-level = "s"
+strip = "debuginfo"
+
 # These crates run password hashing and compression, which take seconds when
 # unoptimized. Optimizing them keeps "cargo run" and "cargo test" fast.
 [profile.dev.package.brotli]
