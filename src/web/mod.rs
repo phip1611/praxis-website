@@ -3,6 +3,8 @@
 //! The HTTP interface.
 
 mod dev;
+#[expect(dead_code, reason = "used by code that a later commit adds")]
+mod error;
 mod legacy;
 mod middleware;
 mod public;
