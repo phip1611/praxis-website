@@ -27,6 +27,9 @@ pub(crate) struct Cli {
 pub(crate) enum Command {
     /// Serves the website.
     Serve(ServeArgs),
+    /// Local development: no configuration needed, and the page reloads
+    /// after code changes.
+    Dev(DevArgs),
 }
 
 /// The options of the server.
@@ -54,6 +57,14 @@ pub(crate) struct ServeArgs {
     pub(crate) matomo_site_id: Option<u32>,
 }
 
+/// The options of the development server.
+#[derive(Clone, Copy, Debug, Args)]
+pub(crate) struct DevArgs {
+    /// The address to listen on.
+    #[arg(long, env = "PRAXIS_BIND", default_value_t = DEFAULT_BIND)]
+    pub(crate) bind: SocketAddr,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -76,7 +87,10 @@ mod tests {
 
     /// Returns the options of the `serve` command line `args`.
     fn serve_args(args: &[&str]) -> ServeArgs {
-        let Command::Serve(args) = Cli::try_parse_from(args).expect("should parse").command;
+        let command = Cli::try_parse_from(args).expect("should parse").command;
+        let Command::Serve(args) = command else {
+            panic!("the value should match `Command::Serve(args)`");
+        };
         args
     }
 
@@ -85,6 +99,17 @@ mod tests {
     fn parses_defaults() {
         let args = serve_args(SERVE);
 
+        assert_eq!(args.bind, DEFAULT_BIND);
+    }
+
+    /// The development server needs no options.
+    #[test]
+    fn parses_dev() {
+        let cli = Cli::try_parse_from(["praxis-website", "dev"]).expect("should parse");
+
+        let Command::Dev(args) = cli.command else {
+            panic!("the value should match `Command::Dev(args)`");
+        };
         assert_eq!(args.bind, DEFAULT_BIND);
     }
 

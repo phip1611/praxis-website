@@ -31,6 +31,9 @@ pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
             source,
         })?;
     info!("listening on {bind}");
+    if config.dev {
+        info!("development mode: open {}", config.base_url.join("/"));
+    }
 
     axum::serve(listener, web::router(state))
         .with_graceful_shutdown(shutdown_signal())

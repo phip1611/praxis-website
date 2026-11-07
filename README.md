@@ -5,7 +5,7 @@ Thalheim/Erzgebirge ([praxis-dirkschuster.de][site]): a small Rust service
 that replaces the previous WordPress site.
 
 ```sh
-cargo run -- --base-url http://localhost:8080
+cargo dev   # http://localhost:8080
 ```
 
 ## License

@@ -21,8 +21,12 @@ use tracing_subscriber::EnvFilter;
 /// journal stream, see `systemd.exec(5)`.
 const JOURNAL_STREAM: &str = "JOURNAL_STREAM";
 
-/// The default filter.
+/// The default filter in production.
 const DEFAULT_FILTER: &str = "info";
+
+/// The default filter in development, which includes the debug output of
+/// this crate.
+const DEV_FILTER: &str = "info,praxis_website=debug";
 
 /// The output format of log lines.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -68,13 +72,13 @@ const fn stdout_identity() -> Option<String> {
 /// Installs the global logger and routes panics into it.
 ///
 /// Must be called once, before any log output.
-pub(crate) fn init() {
+pub(crate) fn init(dev: bool) {
     let journal_stream = env::var(JOURNAL_STREAM).ok();
     let format = LogFormat::detect(journal_stream.as_deref(), stdout_identity().as_deref());
     // Unlike `try_from_default_env`, reports invalid directives on stderr
     // instead of silently using the default.
-    let directives =
-        env::var(EnvFilter::DEFAULT_ENV).unwrap_or_else(|_| DEFAULT_FILTER.to_string());
+    let default = if dev { DEV_FILTER } else { DEFAULT_FILTER };
+    let directives = env::var(EnvFilter::DEFAULT_ENV).unwrap_or_else(|_| default.to_string());
     let filter = EnvFilter::builder().parse_lossy(directives);
 
     let builder = tracing_subscriber::fmt().with_env_filter(filter);

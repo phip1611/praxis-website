@@ -88,7 +88,7 @@ opt-level = "s"
 strip = "debuginfo"
 
 # These crates run password hashing and compression, which take seconds when
-# unoptimized. Optimizing them keeps "cargo run" and "cargo test" fast.
+# unoptimized. Optimizing them keeps "cargo dev" and "cargo test" fast.
 [profile.dev.package.brotli]
 opt-level = 3
 [profile.dev.package.brotli-decompressor]
