@@ -1,0 +1,23 @@
+<p>
+  In der folgenden Übersicht finden Sie meine Öffnungszeiten an Wochentagen.<br>
+  In Ausnahmefällen (z.B. Urlaub) befindet sich ein Hinweis auf
+  <a href="/" title="Startseite praxis-dirkschuster.de">der Startseite</a>.
+</p>
+<table class="data-table">
+  <thead>
+    <tr>
+      <td></td>
+      <th scope="col">Vormittag</th>
+      <th scope="col">Nachmittag</th>
+    </tr>
+  </thead>
+  <tbody>
+    {%- for day in hours %}
+      <tr>
+        <th scope="row">{{ day.name }}</th>
+        <td>{% if let Some(range) = day.morning %}{{ range }}{% endif %}</td>
+        <td>{% if let Some(range) = day.afternoon %}{{ range }}{% endif %}</td>
+      </tr>
+    {%- endfor %}
+  </tbody>
+</table>
