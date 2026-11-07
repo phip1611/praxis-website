@@ -37,6 +37,10 @@
 pub(crate) mod authenticator;
 pub(crate) mod client_ip;
 pub(crate) mod cookie;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
 pub(crate) mod credentials;
 mod csrf;
 pub(crate) mod headers;
