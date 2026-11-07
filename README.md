@@ -11,7 +11,8 @@ cargo dev   # http://localhost:8080, login: admin / admin
 
 - [Developer guide](docs/developer.md): architecture, local development, and
   checks.
-- [Deployment guide](docs/deployment.md): configuration and operation.
+- [Deployment guide](docs/deployment.md): the NixOS module, configuration,
+  and operation.
 
 ## License
 

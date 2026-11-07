@@ -7,11 +7,68 @@ same host that terminates TLS. Logins are limited per client (5 failures per
 15 minutes, if the proxy reports the client address), per account (20), and
 globally (600 password checks per minute).
 
-## Configuration
+## NixOS
 
-Run the binary with these environment variables (or the flags of
-`praxis-website --help`), ideally as a systemd service with `DynamicUser=`,
-`StateDirectory=`, and `LoadCredential=accounts:<file>`.
+The flake exports a NixOS module with a hardened systemd service.
+
+```nix
+{ praxis-website, ... }:
+{
+  imports = [ praxis-website.nixosModules.default ];
+
+  services.praxis-website = {
+    enable = true;
+    baseUrl = "https://praxis-dirkschuster.de";
+    port = 8028;
+    # Created with `praxis-website hash-password <username>`. For secret
+    # managers, `accountsFile` takes a root-only file instead.
+    accounts.dirk = "$argon2id$v=19$m=19456,t=2,p=1$...";
+    # nginx overwrites it, see recommendedProxySettings below.
+    clientIpHeader = "X-Real-IP";
+    matomo = {
+      url = "https://yikes.phip1611.de/";
+      siteId = 9;
+    };
+  };
+
+  services.nginx = {
+    enable = true;
+    # Sets X-Real-IP to the client address, replacing what clients sent.
+    recommendedProxySettings = true;
+    virtualHosts."praxis-dirkschuster.de" = {
+      forceSSL = true;
+      enableACME = true;
+      locations."/".proxyPass = "http://127.0.0.1:8028";
+    };
+    # Old links and bookmarks use www.
+    virtualHosts."www.praxis-dirkschuster.de" = {
+      forceSSL = true;
+      enableACME = true;
+      globalRedirect = "praxis-dirkschuster.de";
+    };
+  };
+}
+```
+
+The service sends its own security headers and precompressed responses, so
+the vhost needs no `add_header` or compression settings. Headers that nginx
+adds as well appear twice, which browsers tolerate.
+
+The configured accounts take effect on the next start of the service, which
+logs out everyone. The hashes are in the world-readable Nix store, which is
+fine: Argon2id and the 15-character minimum make leaked hashes practically
+uncrackable. The service can't add accounts, as it can write its state
+directory only.
+
+Users change their password in the login area. The new hash is stored in the
+state directory and wins over the configured one until the configured hash
+changes. So to reset a forgotten password, configure a new hash. The service
+can't send e-mails, the login area says so.
+
+## Other Systems
+
+Run `praxis-website serve` with these environment variables (or the flags of
+`praxis-website serve --help`). `nix/module.nix` shows the recommended hardening.
 
 | Variable                  | Default                           | Purpose                                                    |
 |---------------------------|-----------------------------------|------------------------------------------------------------|
@@ -24,26 +81,8 @@ Run the binary with these environment variables (or the flags of
 | `PRAXIS_MATOMO_SITE_ID`   | off                               | Matomo site ID                                             |
 | `RUST_LOG`                | `info`                            | Log filter, e.g., `debug`                                  |
 
-Only set `PRAXIS_CLIENT_IP_HEADER` if the proxy overwrites that header, as
-nginx does with `proxy_set_header X-Real-IP $remote_addr`. Otherwise,
-clients could set it themselves and get other clients blocked.
-
-The service sends its own security headers and precompressed responses, so
-the proxy needs no extra headers or compression settings.
-
-## Accounts
-
-The accounts file has one `username:hash` line per account. The hash is
-created with `praxis-website hash-password <username>`. Changes take effect on
-the next start of the service, which logs out everyone. Leaked hashes are
-fine: Argon2id and the 15-character minimum make them practically
-uncrackable. The service can't add accounts, as it can write its state
-directory only.
-
-Users change their password in the login area. The new hash is stored in the
-state directory and wins over the configured one until the configured hash
-changes. So to reset a forgotten password, configure a new hash. The service
-can't send e-mails, the login area says so.
+Only set `PRAXIS_CLIENT_IP_HEADER` if the proxy overwrites that header.
+Otherwise, clients could set it themselves and get other clients blocked.
 
 ## State
 
