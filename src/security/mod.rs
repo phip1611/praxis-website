@@ -15,9 +15,12 @@
 //!
 //! - [`token`]: Random secrets and constant-time comparison.
 //! - [`password`]: Argon2id hashing and verification.
+//! - [`credentials`]: The accounts file and account lookup.
 //! - [`headers`]: Security headers such as the Content Security Policy.
 //! - [`sanitize`]: The allowlist for the HTML of the news.
 
+#[expect(dead_code, reason = "used by code that a later commit adds")]
+pub(crate) mod credentials;
 pub(crate) mod headers;
 #[cfg_attr(
     not(test),

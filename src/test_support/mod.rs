@@ -17,6 +17,9 @@ use argon2::password_hash::PasswordHasher;
 use argon2::{Algorithm, Argon2, Params, Version};
 use std::path::PathBuf;
 
+/// The account of the test fixtures.
+pub(crate) const TEST_USER: &str = "dirk";
+
 /// The password of [`TEST_USER`].
 pub(crate) const TEST_PASSWORD: &str = "correct horse battery staple";
 
@@ -44,6 +47,15 @@ pub(crate) fn cheap_password_hash(password: &str) -> String {
         .hash_password(password.as_bytes())
         .expect("hashing should succeed")
         .to_string()
+}
+
+/// Returns the content of an accounts file with cheap hashes.
+pub(crate) fn accounts_file(accounts: &[(&str, &str)]) -> String {
+    accounts
+        .iter()
+        .map(|(username, password)| format!("{username}:{}", cheap_password_hash(password)))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// Returns a production configuration for the test site.
