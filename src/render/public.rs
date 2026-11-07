@@ -1,15 +1,21 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Renders the public snapshot of all pages.
+//! Renders the public snapshot: pages, sitemap, and `robots.txt`.
 
 use crate::content::news::NewsDocument;
-use crate::content::pages::{HOME_PATH, PageImage, PageSpec, home_title};
+use crate::content::pages::{
+    HOME_PATH, PageImage, PageSpec, ROBOTS_PATH, SITEMAP_PATH, home_title,
+};
 use crate::content::site::SITE;
 use crate::delivery::cached::{CachePolicy, CachedResponse, Compression};
 use crate::delivery::snapshot::Snapshot;
 use crate::render::layout::{Layout, OpenGraph, OpenGraphImage, OpenGraphKind, ROBOTS_PUBLIC};
 use crate::render::seo::json_ld::{self, ImageFacts, PageFacts};
-use crate::render::templates::{BusinessCardImages, HomeTemplate, NotFoundTemplate, PageTemplate};
+use crate::render::seo::robots::robots_txt;
+use crate::render::seo::sitemap::SitemapEntry;
+use crate::render::templates::{
+    BusinessCardImages, HomeTemplate, NotFoundTemplate, PageTemplate, SitemapTemplate,
+};
 use crate::render::{RenderError, SiteRenderer};
 use askama::Template;
 use axum::http::StatusCode;
@@ -77,6 +83,10 @@ impl SiteRenderer {
         for page in &SITE.pages {
             add(&page.path, HTML, self.render_page(page)?);
         }
+        let sitemap = self.render_sitemap(news)?;
+        add(SITEMAP_PATH, "application/xml; charset=utf-8", sitemap);
+        let robots = robots_txt(&self.base_url);
+        add(ROBOTS_PATH, "text/plain; charset=utf-8", robots);
 
         let not_found = CachedResponse::new(
             StatusCode::NOT_FOUND,
@@ -136,6 +146,22 @@ impl SiteRenderer {
     fn render_not_found(&self) -> Result<String, RenderError> {
         let layout = self.private_layout("Seite nicht gefunden");
         Ok(NotFoundTemplate { layout: &layout }.render()?)
+    }
+
+    /// Renders the sitemap with all public pages.
+    fn render_sitemap(&self, news: &NewsDocument) -> Result<String, RenderError> {
+        let home = SitemapEntry {
+            loc: self.base_url.join(HOME_PATH),
+            lastmod: Some(news.modified_at.to_string()),
+            image: None,
+        };
+        let pages = SITE.pages.iter().map(|page| SitemapEntry {
+            loc: self.base_url.join(&page.path),
+            lastmod: None,
+            image: page.image().map(|image| self.asset_url(&image.asset)),
+        });
+        let entries: Vec<_> = iter::once(home).chain(pages).collect();
+        Ok(SitemapTemplate { entries: &entries }.render()?)
     }
 
     /// Returns the frame of a public page with all search engine metadata.
@@ -224,14 +250,15 @@ mod tests {
         SiteRenderer::new(&test_config(), Arc::new(AssetCatalog::new()))
     }
 
-    /// The site has the start page, all fixed pages, and assets.
+    /// The site has the start page, all fixed pages, sitemap, robots, and
+    /// assets.
     #[test]
     fn render_site_contains_all_routes() {
         let snapshot = renderer()
             .render_site(&NewsDocument::seed())
             .expect("rendering should succeed");
 
-        let mut expected = vec![HOME_PATH, "/favicon.ico"];
+        let mut expected = vec![HOME_PATH, SITEMAP_PATH, ROBOTS_PATH, "/favicon.ico"];
         expected.extend(SITE.pages.iter().map(|page| page.path.as_str()));
         for path in expected {
             assert!(snapshot.get(path).is_some(), "{path}");
@@ -264,6 +291,23 @@ mod tests {
             .expect("script element should be closed");
         let parsed: serde_json::Value = serde_json::from_str(json).expect("should be JSON");
         assert_eq!(parsed["name"], name);
+    }
+
+    /// The sitemap lists all pages with dates, and the business card image.
+    #[test]
+    fn sitemap_lists_all_pages() {
+        let sitemap = renderer()
+            .render_sitemap(&NewsDocument::seed())
+            .expect("rendering should succeed");
+
+        assert!(
+            sitemap
+                .contains("<loc>https://praxis.test/</loc><lastmod>2026-11-07T08:31:14Z</lastmod>")
+        );
+        for page in &SITE.pages {
+            assert!(sitemap.contains(&format!("<loc>https://praxis.test{}</loc>", page.path)));
+        }
+        assert!(sitemap.contains("<image:loc>https://praxis.test/assets/images/Visitenkarte"));
     }
 
     /// Every business card variant exists, so the srcset has no broken URL.
