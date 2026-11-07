@@ -2,6 +2,8 @@
 
 //! Static files, embedded into the binary.
 //!
+//! `build.rs` minifies the stylesheet and the scripts before.
+//!
 //! Each file is served under a URL with a hash of its content, such as
 //! `/assets/style.0123456789abcdef.css`, so browsers may cache it forever and
 //! still get changes immediately. Images of the WordPress site also stay
@@ -164,6 +166,21 @@ mod tests {
         );
         assert!(paths.contains(&"/wp-content/uploads/2015/09/cropped-Logo-und-Favicon-32x32.png"));
         assert!(paths.contains(&"/favicon.ico"));
+    }
+
+    /// The stylesheet and the scripts are minified: their comments, such as
+    /// the license header, and the indentation are gone.
+    #[test]
+    fn text_is_minified() {
+        for &(name, _, bytes) in FILES
+            .iter()
+            .filter(|(_, content_type, _)| content_type.starts_with("text/"))
+        {
+            let text = str::from_utf8(bytes).expect("text assets should be UTF-8");
+
+            assert!(!text.contains("SPDX-License-Identifier"), "{name}");
+            assert!(!text.contains("\n  "), "{name}");
+        }
     }
 
     /// The names that the code uses refer to embedded files.

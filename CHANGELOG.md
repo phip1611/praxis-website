@@ -7,3 +7,4 @@
 - NixOS module with a hardened systemd service.
 - The access statistics show the device class, browser, and operating system
   of visitors, without storing user agents.
+- The stylesheet and the scripts are minified at build time.

@@ -29,7 +29,9 @@ features and list the ones the code needs.
 Public pages never run templates per request. At startup and after each edit,
 `render` produces every page and the sitemap, and `delivery`
 compresses them (Brotli, gzip) into an immutable snapshot. A request only
-negotiates the encoding and checks the ETag.
+negotiates the encoding and checks the ETag. The files in `assets/` are
+embedded into the binary, after `build.rs` minified the stylesheet and the
+scripts.
 
 | Module     | Responsibility                                                                 |
 |------------|--------------------------------------------------------------------------------|
