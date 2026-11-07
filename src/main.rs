@@ -27,6 +27,7 @@ mod persist;
 mod render;
 mod security;
 mod server;
+mod stats;
 #[cfg(test)]
 mod test_support;
 mod web;
