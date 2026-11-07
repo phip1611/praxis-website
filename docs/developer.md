@@ -54,6 +54,10 @@ tests fail until they match. The business card
 (`assets/images/Visitenkarte-*`) is an image with the same facts and has to be
 recreated by hand, including the WebP variants (`cwebp -q 80 -m 6`).
 
+**A new or changed PNG image:** compress it losslessly with
+`nix run nixpkgs#oxipng -- -o 4 --strip safe <file>`. This keeps the pixels
+and removes metadata that doesn't affect the display.
+
 **A new page:** add an entry to `pages` in `content/site.toml`, a
 `PageBody` variant in `src/content/pages.rs`, a template in `templates/pages/`, and the matching
 `when` arm in `templates/page.html`. Navigation, sitemap, statistics, and the
