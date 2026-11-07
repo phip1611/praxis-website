@@ -11,6 +11,8 @@
 //! few minutes and on shutdown, see [`report`].
 
 pub(crate) mod bots;
+#[expect(dead_code, reason = "used by code that a later commit adds")]
+pub(crate) mod clients;
 pub(crate) mod report;
 
 use crate::clock::Clock;
