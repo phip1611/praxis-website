@@ -1,4 +1,5 @@
-# Exports the website as Nix package.
+# Exports the website as Nix package, with a development shell and the Nix
+# formatter.
 
 {
   description = "Website of the general practice Dipl.-Med. Dirk Schuster";
@@ -35,5 +36,21 @@
       checks = forAllSystems (pkgs: {
         package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
       });
+
+      devShells = forAllSystems (pkgs: {
+        default = pkgs.mkShell {
+          packages = with pkgs; [
+            # The Rust toolchain comes from rustup, so that the MSRV and
+            # nightly are available as well.
+            rustup
+            # The spell checker of the CI.
+            typos
+            # The formatter of the Nix files (`treefmt`), also via `nix fmt`.
+            nixfmt-tree
+          ];
+        };
+      });
+
+      formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);
     };
 }
