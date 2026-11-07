@@ -33,6 +33,9 @@
     {%- if let Some(json_ld) = layout.json_ld %}
       <script type="application/ld+json">{{ json_ld|json|safe }}</script>
     {%- endif %}
+    {%- for script in layout.scripts %}
+      <script src="{{ script }}" defer></script>
+    {%- endfor %}
     {%- if let Some(analytics) = layout.analytics %}
       <script
         src="{{ analytics.script_url }}"

@@ -1,0 +1,11 @@
+# Rebuilds and restarts the dev server on every change. The browser reloads by
+# itself once the new server is up. Run "bacon" to start it.
+default_job = "dev"
+
+[jobs.dev]
+command = ["cargo", "run", "--", "dev"]
+need_stdout = true
+allow_warnings = true
+background = false
+on_change_strategy = "kill_then_restart"
+watch = ["assets", "content", "templates"]

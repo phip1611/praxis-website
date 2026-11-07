@@ -17,6 +17,8 @@ use std::sync::Arc;
 pub(crate) const STYLESHEET: &str = "style.css";
 /// Starts the Matomo tracking.
 pub(crate) const ANALYTICS_SCRIPT: &str = "analytics.js";
+/// Reloads pages in the development mode.
+pub(crate) const LIVE_RELOAD_SCRIPT: &str = "live-reload.js";
 /// The favicon.
 pub(crate) const ICON_32: &str = "images/cropped-Logo-und-Favicon-32x32.png";
 /// The icon for iOS home screens.
@@ -170,6 +172,7 @@ mod tests {
         for name in [
             STYLESHEET,
             ANALYTICS_SCRIPT,
+            LIVE_RELOAD_SCRIPT,
             ICON_32,
             ICON_180,
             ICON_192,

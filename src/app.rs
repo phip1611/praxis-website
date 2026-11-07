@@ -8,6 +8,7 @@ use crate::delivery::assets::AssetCatalog;
 use crate::delivery::snapshot::Snapshot;
 use crate::render::{RenderError, SiteRenderer};
 use crate::security::headers::SecurityHeaders;
+use crate::security::token::{RandomError, SecretToken};
 use std::io;
 use std::sync::Arc;
 use thiserror::Error;
@@ -18,6 +19,9 @@ pub(crate) enum StartupError {
     /// The pages can't be rendered.
     #[error(transparent)]
     Render(#[from] RenderError),
+    /// The random number generator failed.
+    #[error(transparent)]
+    Random(#[from] RandomError),
     /// An I/O operation failed.
     #[error("{context}: {source}")]
     Io {
@@ -31,10 +35,14 @@ pub(crate) enum StartupError {
 /// The state that all request handlers share.
 #[derive(Clone, Debug)]
 pub(crate) struct AppState {
+    /// The configuration.
+    pub(crate) config: Arc<Config>,
     /// The precomputed public responses.
     pub(crate) site: Arc<Snapshot>,
     /// The security headers of all responses.
     pub(crate) security_headers: Arc<SecurityHeaders>,
+    /// A random ID per start, for the live reload of the development mode.
+    pub(crate) boot_id: Arc<str>,
 }
 
 impl AppState {
@@ -43,10 +51,10 @@ impl AppState {
     /// # Errors
     ///
     /// Returns [`StartupError`] if the pages can't be rendered.
-    pub(crate) fn new(config: &Config) -> Result<Self, StartupError> {
+    pub(crate) fn new(config: Config) -> Result<Self, StartupError> {
         let news = NewsDocument::seed();
         let assets = Arc::new(AssetCatalog::new());
-        let renderer = Arc::new(SiteRenderer::new(config, assets));
+        let renderer = Arc::new(SiteRenderer::new(&config, assets));
         let site = Arc::new(renderer.render_site(&news)?);
         let https = config.base_url.is_https();
         let security_headers = Arc::new(SecurityHeaders::new(
@@ -57,8 +65,10 @@ impl AppState {
                 .map(|analytics| analytics.origin()),
         ));
         Ok(Self {
+            config: Arc::new(config),
             site,
             security_headers,
+            boot_id: SecretToken::generate()?.as_str().into(),
         })
     }
 }

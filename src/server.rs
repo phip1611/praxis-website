@@ -23,7 +23,9 @@ pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
     );
 
     let bind = config.bind;
-    let state = AppState::new(&config)?;
+    let dev = config.dev;
+    let state = AppState::new(config)?;
+    let base = state.config.base_url.clone();
     let listener = TcpListener::bind(bind)
         .await
         .map_err(|source| StartupError::Io {
@@ -31,8 +33,8 @@ pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
             source,
         })?;
     info!("listening on {bind}");
-    if config.dev {
-        info!("development mode: open {}", config.base_url.join("/"));
+    if dev {
+        info!("development mode: open {}", base.join("/"));
     }
 
     axum::serve(listener, web::router(state))

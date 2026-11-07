@@ -34,6 +34,8 @@ pub(crate) struct SiteRenderer {
     base_url: BaseUrl,
     /// The analytics configuration.
     analytics: Option<Analytics>,
+    /// Whether to include the live reload script of the development mode.
+    live_reload: bool,
     /// The embedded files.
     assets: Arc<AssetCatalog>,
 }
@@ -44,6 +46,7 @@ impl SiteRenderer {
         Self {
             base_url: config.base_url.clone(),
             analytics: config.analytics.clone(),
+            live_reload: config.dev,
             assets,
         }
     }
@@ -54,12 +57,14 @@ impl SiteRenderer {
     }
 
     /// Returns the frame of a page that search engines must not index.
-    fn private_layout(&self, heading: &str) -> Layout {
-        self.base_layout(
+    fn private_layout(&self, heading: &str, mut scripts: Vec<String>) -> Layout {
+        let mut layout = self.base_layout(
             format!("{heading} – {}", SITE.practice.site_name),
             &SITE.practice.tagline,
             None,
-        )
+        );
+        layout.scripts.append(&mut scripts);
+        layout
     }
 
     /// Returns the frame that all pages share. It's private by default;
@@ -82,6 +87,10 @@ impl SiteRenderer {
                 privacy_policy,
             })
             .collect();
+        let mut scripts = Vec::new();
+        if self.live_reload {
+            scripts.push(self.assets.url(assets::LIVE_RELOAD_SCRIPT).to_string());
+        }
         Layout {
             title,
             description: description.to_string(),
@@ -106,6 +115,7 @@ impl SiteRenderer {
                 // Windows needs an absolute URL here.
                 tile: self.asset_url(assets::ICON_270),
             },
+            scripts,
             analytics: None,
         }
     }

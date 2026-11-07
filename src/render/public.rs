@@ -147,7 +147,7 @@ impl SiteRenderer {
 
     /// Renders the page for unknown paths.
     fn render_not_found(&self) -> Result<String, RenderError> {
-        let layout = self.private_layout("Seite nicht gefunden");
+        let layout = self.private_layout("Seite nicht gefunden", Vec::new());
         Ok(NotFoundTemplate { layout: &layout }.render()?)
     }
 
@@ -285,7 +285,7 @@ mod tests {
     #[test]
     fn json_ld_cannot_close_script_element() {
         let renderer = renderer();
-        let mut layout = renderer.private_layout("Test");
+        let mut layout = renderer.private_layout("Test", Vec::new());
         let name = "</script><script>alert(1)";
         layout.json_ld = Some(serde_json::json!({ "name": name }));
 

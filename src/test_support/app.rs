@@ -3,6 +3,7 @@
 //! The whole service in memory, driven through its router.
 
 use crate::app::AppState;
+use crate::cli::{DEFAULT_BIND, DevArgs};
 use crate::config::Config;
 use crate::test_support::test_config;
 use crate::web;
@@ -16,6 +17,8 @@ use tower::ServiceExt;
 /// The whole service.
 #[derive(Debug)]
 pub(crate) struct TestApp {
+    /// The shared state, for checks on the internals.
+    pub(crate) state: AppState,
     /// The router under test.
     router: Router,
 }
@@ -58,14 +61,20 @@ impl TestResponse {
 impl TestApp {
     /// Creates the service with the production configuration of the test site.
     pub(crate) fn new() -> Self {
-        Self::with_config(&test_config())
+        Self::with_config(test_config())
+    }
+
+    /// Creates the service in development mode.
+    pub(crate) fn dev() -> Self {
+        Self::with_config(Config::dev(DevArgs { bind: DEFAULT_BIND }))
     }
 
     /// Creates the service with `config`.
-    fn with_config(config: &Config) -> Self {
+    fn with_config(config: Config) -> Self {
         let state = AppState::new(config).expect("the service should start");
         Self {
-            router: web::router(state),
+            router: web::router(state.clone()),
+            state,
         }
     }
 

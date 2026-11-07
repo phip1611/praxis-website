@@ -130,6 +130,8 @@ pub(super) struct Layout {
     pub(super) nav: Vec<NavLink>,
     /// The stylesheet and icons.
     pub(super) assets: LayoutAssets,
+    /// Scripts to load.
+    pub(super) scripts: Vec<String>,
     /// The analytics configuration, if enabled for this page.
     pub(super) analytics: Option<AnalyticsView>,
 }
