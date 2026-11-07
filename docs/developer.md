@@ -37,7 +37,7 @@ encoding and checks the ETag.
 | `delivery` | Embedded assets with hashed URLs, compression, the snapshot         |
 | `web`      | Router, public and legacy routes, middleware                        |
 | `security` | All security code: headers, sanitizing, random tokens               |
-| `stats`    | Anonymous page view counters                                        |
+| `stats`    | Anonymous page view counters and the daily log summary              |
 | `persist`  | Atomic JSON files in the state directory                            |
 
 ## Common Changes

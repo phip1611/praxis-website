@@ -7,9 +7,11 @@
 //! [`bots`]. Only known pages get counters, so the memory use is bounded no
 //! matter which paths clients request.
 //!
-//! The counters live in memory.
+//! The counters live in memory and are written to the state directory every
+//! few minutes and on shutdown, see [`report`].
 
 pub(crate) mod bots;
+pub(crate) mod report;
 
 use crate::clock::Clock;
 use crate::content::pages::HOME_PATH;
