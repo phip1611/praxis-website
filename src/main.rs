@@ -11,6 +11,7 @@ mod cli;
     expect(dead_code, reason = "used by code that a later commit adds")
 )]
 mod config;
+mod content;
 mod logging;
 
 use crate::cli::{Cli, Command, ServeArgs};

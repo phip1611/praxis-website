@@ -1,0 +1,59 @@
+# The facts of the website. The pages, the navigation, the sitemap, and the
+# search engine data are built from this file, so that, for example, the
+# opening hours in the table and in the search engine data never disagree.
+
+# The contact data and location of the practice.
+[practice]
+site_name = "Hausarztpraxis Dirk Schuster"
+tagline = "Dipl.-Med. Dirk Schuster in Thalheim"
+doctor = "Dipl.-Med. Dirk Schuster"
+street = "Stadtbadstraße 1b"
+postal_code = "09380"
+locality = "Thalheim/Erzgebirge"
+region = "Sachsen"
+email = "praxisdirkschuster@onlinemed.de"
+# The entrance, from the Google Maps link.
+latitude = 50.7037736
+longitude = 12.8512315
+maps_url = "https://www.google.com/maps/place/Dipl.-Med.+Dirk+Schuster/@50.7037736,12.8512315,20z/data=!4m2!3m1!1s0x47a74bc8a645a02d:0x870d82606263125d"
+
+# Phone numbers as printed and in international format for `tel:` links and
+# the search engine data.
+[practice.phone]
+display = "03721 39040"
+international = "+49372139040"
+
+[practice.fax]
+display = "03721 390477"
+international = "+493721390477"
+
+[practice.mobile]
+display = "0170 2989040"
+international = "+491702989040"
+
+# The regular opening hours. Exceptions are announced on the start page.
+[[opening_hours]]
+name = "Montag"
+schema_day = "https://schema.org/Monday"
+morning = { opens = "08:00", closes = "12:00" }
+afternoon = { opens = "16:00", closes = "18:00" }
+
+[[opening_hours]]
+name = "Dienstag"
+schema_day = "https://schema.org/Tuesday"
+morning = { opens = "08:00", closes = "10:00" }
+
+[[opening_hours]]
+name = "Mittwoch"
+schema_day = "https://schema.org/Wednesday"
+afternoon = { opens = "15:00", closes = "19:00" }
+
+[[opening_hours]]
+name = "Donnerstag"
+schema_day = "https://schema.org/Thursday"
+morning = { opens = "08:00", closes = "12:00" }
+
+[[opening_hours]]
+name = "Freitag"
+schema_day = "https://schema.org/Friday"
+morning = { opens = "08:00", closes = "12:00" }
