@@ -7,7 +7,7 @@ use crate::cli::{DEFAULT_BIND, DevArgs};
 use crate::config::Config;
 use crate::security::credentials::CredentialStore;
 use crate::test_support::{
-    MockClock, TEST_BASE_URL, TEST_PASSWORD, TEST_USER, accounts_file, test_config,
+    MemoryStore, MockClock, TEST_BASE_URL, TEST_PASSWORD, TEST_USER, accounts_file, test_config,
 };
 use crate::web;
 use axum::Router;
@@ -20,13 +20,17 @@ use std::sync::Arc;
 use tempfile::TempDir;
 use tower::ServiceExt;
 
-/// The service with a mocked clock and the test account.
+/// The service with mocked clock and store, and the test account.
 #[derive(Debug)]
 pub(crate) struct TestApp {
     /// The shared state, for checks on the internals.
     pub(crate) state: AppState,
     /// The router under test.
     router: Router,
+    /// The clock of the service.
+    pub(crate) clock: Arc<MockClock>,
+    /// The store of the service.
+    pub(crate) store: Arc<MemoryStore>,
     /// The state directory, e.g., for the statistics.
     _state_dir: TempDir,
 }
@@ -112,12 +116,21 @@ impl TestApp {
         let state_dir = TempDir::new().expect("temp dir should be created");
         config.state_dir = state_dir.path().to_path_buf();
         let clock = Arc::new(MockClock::default());
+        let store = Arc::new(MemoryStore::default());
         let credentials = CredentialStore::parse(&accounts_file(&[(TEST_USER, TEST_PASSWORD)]))
             .expect("the test accounts should be valid");
-        let state = AppState::new(config, clock, credentials).expect("the service should start");
+        let state = AppState::new(
+            config,
+            Arc::<MockClock>::clone(&clock),
+            Arc::<MemoryStore>::clone(&store),
+            credentials,
+        )
+        .expect("the service should start");
         Self {
             router: web::router(state.clone()),
             state,
+            clock,
+            store,
             _state_dir: state_dir,
         }
     }
@@ -219,10 +232,8 @@ impl TestApp {
             .next()
             .expect("the cookie should have a value")
             .to_string();
-        let stats = self
-            .get_with("/admin/statistik/", &[("cookie", &cookie)])
-            .await;
-        let csrf = extract_hidden_field(stats.text(), "csrf");
+        let editor = self.get_with("/admin/", &[("cookie", &cookie)]).await;
+        let csrf = extract_hidden_field(editor.text(), "csrf");
         LoggedIn {
             app: self,
             cookie,
@@ -287,6 +298,32 @@ impl LoggedIn<'_> {
     /// Submits a form with the session cookie.
     pub(crate) async fn post(&self, path: &str, fields: &[(&str, &str)]) -> TestResponse {
         self.app.post_form(path, fields, Some(&self.cookie)).await
+    }
+
+    /// Submits a form with the session cookie from another origin.
+    pub(crate) async fn post_from(
+        &self,
+        origin: &str,
+        path: &str,
+        fields: &[(&str, &str)],
+    ) -> TestResponse {
+        self.app
+            .post_form_from(origin, path, fields, Some(&self.cookie))
+            .await
+    }
+
+    /// Saves new news content, based on the current revision.
+    pub(crate) async fn save_news(&self, html: &str) -> TestResponse {
+        let revision = self.app.state.news.lock().await.revision.to_string();
+        self.post(
+            "/admin/",
+            &[
+                ("csrf", &self.csrf),
+                ("revision", &revision),
+                ("html", html),
+            ],
+        )
+        .await
     }
 }
 

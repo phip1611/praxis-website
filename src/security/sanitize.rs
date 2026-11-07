@@ -13,9 +13,12 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::{self, Display, Formatter};
 use std::sync::LazyLock;
 
-/// The allowed elements: the formatting of the news, plus `b`, `i`,
-/// headings, and ordered lists for HTML written by hand. All other elements
-/// are removed, while their text stays.
+/// The allowed elements: what the visual editor produces, plus `b`, `i`,
+/// headings, and ordered lists for HTML written by hand in the fallback text
+/// field. All other elements are removed, while their text stays.
+///
+/// A new editor feature has to fit through this allowlist, see
+/// docs/developer.md.
 const ALLOWED_TAGS: [&str; 14] = [
     "a", "b", "br", "em", "h2", "h3", "hr", "i", "li", "ol", "p", "span", "strong", "ul",
 ];
@@ -114,9 +117,9 @@ mod tests {
         SanitizedHtml::sanitize(html).as_str().to_string()
     }
 
-    /// All formatting of the news survives without changes.
+    /// All formatting that the editor offers survives without changes.
     #[test]
-    fn keeps_news_formatting() {
+    fn keeps_editor_formatting() {
         let html = "<p class=\"text-center\"><strong>a</strong> <em>b</em> \
                     <span class=\"text-red\">c</span></p><hr><ul><li>d</li></ul>";
 

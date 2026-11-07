@@ -30,7 +30,7 @@ mod tests {
     use crate::test_support::TestApp;
     use axum::http::StatusCode;
 
-    /// The statistics require a login.
+    /// The statistics require a login, like the editor.
     #[tokio::test]
     async fn requires_login() {
         let app = TestApp::new();

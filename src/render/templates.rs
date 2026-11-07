@@ -80,6 +80,69 @@ pub(super) struct LoginTemplate<'a> {
     pub(super) max_password: usize,
 }
 
+/// The kind of a notice in the login area.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum NoticeKind {
+    /// Something worked.
+    Success,
+    /// Something failed.
+    Error,
+}
+
+/// A message at the top of the editor.
+#[derive(Clone, Debug)]
+pub(crate) struct Notice {
+    /// Whether it reports success or failure.
+    pub(crate) kind: NoticeKind,
+    /// The German text.
+    pub(crate) text: String,
+}
+
+impl Notice {
+    /// Returns whether it reports a failure.
+    pub(crate) const fn is_error(&self) -> bool {
+        matches!(self.kind, NoticeKind::Error)
+    }
+
+    /// Returns the CSS class for the kind.
+    const fn class(&self) -> &'static str {
+        match self.kind {
+            NoticeKind::Success => "notice-success",
+            NoticeKind::Error => "notice-error",
+        }
+    }
+
+    /// Returns the ARIA role: errors interrupt screen readers, others don't.
+    const fn role(&self) -> &'static str {
+        match self.kind {
+            NoticeKind::Success => "status",
+            NoticeKind::Error => "alert",
+        }
+    }
+}
+
+/// The editor for the news.
+#[derive(Debug, Template)]
+#[template(path = "admin/editor.html")]
+pub(super) struct EditorTemplate<'a> {
+    /// The page frame.
+    pub(super) layout: &'a Layout,
+    /// The logged-in account.
+    pub(super) username: &'a str,
+    /// The content to edit.
+    pub(super) html: &'a SanitizedHtml,
+    /// The revision the edit is based on.
+    pub(super) revision: u64,
+    /// When the stored content last changed, formatted for display.
+    pub(super) modified_at: &'a str,
+    /// Who changed the stored content last.
+    pub(super) modified_by: &'a str,
+    /// The CSRF token of the session.
+    pub(super) csrf: &'a str,
+    /// The message to show, if any.
+    pub(super) notice: Option<&'a Notice>,
+}
+
 /// The XML sitemap.
 #[derive(Debug, Template)]
 #[template(path = "seo/sitemap.xml")]

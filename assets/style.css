@@ -240,17 +240,17 @@ img {
   font-size: 1.1em;
 }
 
-/* Empty paragraphs in the news would add unexpected gaps. */
+/* Empty paragraphs from the editor would add unexpected gaps. */
 .entry-content p:empty {
   display: none;
 }
 
-/* Centered news text. The CSP forbids inline styles, hence a class. */
+/* "Zentriert" in the editor. The CSP forbids inline styles, hence a class. */
 .text-center {
   text-align: center;
 }
 
-/* Red news text, for warnings such as closing days. */
+/* "Rot" in the editor, for warnings such as closing days. */
 .text-red {
   color: var(--color-red);
 }
@@ -324,6 +324,14 @@ img {
   font-size: 0.875rem;
 }
 
+/* Links between the editor and the statistics. */
+.admin-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em 1.5em;
+  font-size: 0.875rem;
+}
+
 /* Labels above their fields, which works on any screen width. */
 .admin-form label {
   display: block;
@@ -331,9 +339,10 @@ img {
   font-weight: bold;
 }
 
-/* Fields span the column, as people type long passwords. */
+/* Fields span the column, as people type long texts and passwords. */
 .admin-form input[type="text"],
-.admin-form input[type="password"] {
+.admin-form input[type="password"],
+.admin-form textarea {
   inline-size: 100%;
   padding: 0.5em;
   border: 1px solid var(--color-field-border);
@@ -341,7 +350,13 @@ img {
   font: inherit;
 }
 
-/* Form buttons side by side, wrapping on phones. */
+/* The HTML fallback editor without JavaScript shows code. */
+.admin-form textarea {
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+/* Save button and "Startseite ansehen" side by side, wrapping on phones. */
 .admin-actions {
   display: flex;
   flex-wrap: wrap;
@@ -350,7 +365,7 @@ img {
   margin-block-start: 1.5em;
 }
 
-/* Primary buttons, e.g., "Anmelden". */
+/* Primary buttons ("Anmelden", "Speichern"). */
 button {
   padding: 0.6em 1.2em;
   border: 1px solid var(--color-link);
@@ -384,19 +399,25 @@ button:focus {
   color: var(--color-hover);
 }
 
-/* Logging out is rare, so it sits apart from the content. */
+/* Logging out is rare, so it sits apart from the editor actions. */
 .logout-form {
   margin-block-start: 2em;
 }
 
-/* Messages, e.g., after a failed login. The bar adds a non-color cue. */
+/* Messages after saving or a failed login. The bar adds a non-color cue. */
 .notice {
   padding: 0.75em 1em;
   border-inline-start: 4px solid;
   background: var(--color-surface);
 }
 
-/* Errors, e.g., of the login. */
+/* "Gespeichert". */
+.notice-success {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+/* Login and save errors. */
 .notice-error {
   border-color: var(--color-error);
   color: var(--color-error);

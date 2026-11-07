@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+  <article class="entry admin">
+    <h1 class="entry-title">Aktuelle Informationen bearbeiten</h1>
+    {% let current = "editor" %}{% include "admin/links.html" %}
+    <p class="admin-meta">
+      Angemeldet als <strong>{{ username }}</strong>. Zuletzt geändert am {{ modified_at }} von
+      {{ modified_by }}.
+    </p>
+    {%- if let Some(notice) = notice %}
+      <p class="notice {{ notice.class() }}" role="{{ notice.role() }}">{{ notice.text }}</p>
+    {%- endif %}
+    <form method="post" action="/admin/" id="news-form" class="admin-form">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="hidden" name="revision" value="{{ revision }}">
+      <label for="html">Text der Startseite (HTML)</label>
+      <textarea id="html" name="html" rows="16">{{ html }}</textarea>
+      <div class="admin-actions">
+        <button type="submit">Speichern und veröffentlichen</button>
+        <a href="/" target="_blank" rel="noopener">Startseite ansehen<span class="visually-hidden">
+        (öffnet in neuem Tab)</span></a>
+      </div>
+    </form>
+    <form method="post" action="/admin/logout/" class="logout-form">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button type="submit" class="link-button">Abmelden</button>
+    </form>
+  </article>
+{% endblock %}

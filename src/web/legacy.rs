@@ -7,7 +7,7 @@
 //! by [`crate::delivery::assets`].
 
 use crate::content::pages::{HOME_PATH, SITEMAP_PATH};
-use crate::web::admin::LOGIN_PATH;
+use crate::web::admin::{EDITOR_PATH, LOGIN_PATH};
 
 /// What happens with an old URL.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -39,9 +39,9 @@ const REDIRECTS: [(&str, &str); 15] = [
     ("/attachment-sitemap.xml", SITEMAP_PATH),
     ("/wp-sitemap.xml", SITEMAP_PATH),
     // Bookmarks of the old login.
-    ("/wp-admin/", LOGIN_PATH),
+    ("/wp-admin/", EDITOR_PATH),
     ("/wp-login.php", LOGIN_PATH),
-    ("/admin", LOGIN_PATH),
+    ("/admin", EDITOR_PATH),
 ];
 
 /// Old paths of content that was removed on purpose.

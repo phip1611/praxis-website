@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! The login area with the access statistics.
+//! The login area for editing the news.
 
+mod editor;
 mod forms;
 mod login;
 mod stats;
@@ -16,11 +17,14 @@ use axum::middleware::{Next, from_fn};
 use axum::response::{Redirect, Response};
 use axum::routing::{get, post};
 
+/// The path of the editor.
+pub(super) const EDITOR_PATH: &str = "/admin/";
+
 /// The path of the login form.
 pub(crate) const LOGIN_PATH: &str = "/admin/login/";
 
-/// The path of the access statistics, the start of the login area.
-pub(super) const STATS_PATH: &str = "/admin/statistik/";
+/// The path of the access statistics.
+const STATS_PATH: &str = "/admin/statistik/";
 
 /// The path for logging out.
 const LOGOUT_PATH: &str = "/admin/logout/";
@@ -32,6 +36,7 @@ const MAX_FORM_BYTES: usize = 256 * 1024;
 /// Returns the routes of the login area.
 pub(super) fn routes() -> Router<AppState> {
     Router::new()
+        .route(EDITOR_PATH, get(editor::show).post(editor::save))
         .route(LOGIN_PATH, get(login::show).post(login::submit))
         .route(LOGOUT_PATH, post(login::logout))
         .route(STATS_PATH, get(stats::show))
@@ -84,12 +89,12 @@ mod tests {
     use crate::test_support::TestApp;
     use axum::http::StatusCode;
 
-    /// Without session, the statistics send to the login form.
+    /// Without session, the editor sends to the login form.
     #[tokio::test]
-    async fn statistics_require_login() {
+    async fn editor_requires_login() {
         let app = TestApp::new();
 
-        let response = app.get("/admin/statistik/").await;
+        let response = app.get("/admin/").await;
 
         assert_eq!(response.status, StatusCode::SEE_OTHER);
         assert_eq!(response.header("location"), "/admin/login/");
@@ -112,10 +117,7 @@ mod tests {
         let app = TestApp::new();
 
         let response = app
-            .get_with(
-                "/admin/statistik/",
-                &[("cookie", "__Host-praxis-session=forged")],
-            )
+            .get_with("/admin/", &[("cookie", "__Host-praxis-session=forged")])
             .await;
 
         assert_eq!(response.status, StatusCode::SEE_OTHER);

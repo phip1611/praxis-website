@@ -7,9 +7,11 @@
 
 mod app;
 mod clock;
+mod store;
 
 pub(crate) use app::TestApp;
 pub(crate) use clock::MockClock;
+use store::MemoryStore;
 
 use crate::cli::{DEFAULT_BIND, ServeArgs};
 use crate::config::{BaseUrl, Config};

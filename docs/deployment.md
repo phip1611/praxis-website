@@ -44,6 +44,8 @@ make them practically uncrackable.
 The state directory (`/var/lib/private/praxis-website` with `DynamicUser=`)
 contains small JSON files. Back them up; all are written atomically.
 
+- `aktuelle-informationen.json`: the news on the start page. Without it, the
+  service shows the content as of the migration from WordPress.
 - `statistik.json`: page views per day and page, kept for a year. If the file
   can't be read, the service starts over with empty statistics and keeps the
   old file as `statistik.json.unreadable`.
@@ -60,8 +62,7 @@ journalctl -u praxis-website -g 'access statistics'  # Daily summaries
 ```
 
 The log has one line per request (method, path, status, duration), logins,
-and after each day a summary of the access statistics. Client addresses are
-never logged or stored. After failed logins, the service keeps a pseudonym
-of the client address in memory, for at most 16 minutes after the last
-failure. The detailed statistics are at `/admin/statistik/` after logging
-in.
+edits, and after each day a summary of the access statistics. Client addresses
+are never logged or stored. After failed logins, the service keeps a pseudonym
+of the client address in memory, for at most 16 minutes after the last failure.
+The detailed statistics are at `/admin/statistik/` after logging in.
