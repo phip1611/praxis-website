@@ -78,6 +78,11 @@ pub(crate) struct ServeArgs {
     /// the proxy overwrites the header, as clients can send it themselves.
     #[arg(long, env = "PRAXIS_CLIENT_IP_HEADER")]
     pub(crate) client_ip_header: Option<HeaderName>,
+
+    /// Keeps the site out of search results, e.g., for a test instance that
+    /// is reachable but not public.
+    #[arg(long, env = "PRAXIS_NOINDEX")]
+    pub(crate) noindex: bool,
 }
 
 /// The options of the development server.
@@ -127,6 +132,13 @@ mod tests {
         let args = serve_args(SERVE);
 
         assert_eq!(args.bind, DEFAULT_BIND);
+        assert!(!args.noindex);
+    }
+
+    /// The flag turns indexing off.
+    #[test]
+    fn parses_noindex() {
+        assert!(serve_args(&[SERVE, &["--noindex"]].concat()).noindex);
     }
 
     /// The development server needs no options.

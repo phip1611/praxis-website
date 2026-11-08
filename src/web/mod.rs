@@ -21,8 +21,11 @@ pub(crate) fn router(state: AppState) -> Router {
     if state.config.dev {
         router = router.merge(dev::routes());
     }
+    router = router.fallback(public::serve);
+    if state.config.noindex {
+        router = router.layer(from_fn(middleware::noindex::forbid_indexing));
+    }
     router
-        .fallback(public::serve)
         // The last layer is the outermost, so timeouts get security headers
         // and are logged.
         .layer(from_fn(middleware::timeout::limit))

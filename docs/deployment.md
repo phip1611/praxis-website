@@ -30,6 +30,8 @@ The flake exports a NixOS module with a hardened systemd service. Its VM test
       url = "https://yikes.phip1611.de/";
       siteId = 9;
     };
+    # Only for a test instance that search engines must not index.
+    # noindex = true;
   };
 
   services.nginx = {
@@ -80,10 +82,16 @@ Run `praxis-website serve` with these environment variables (or the flags of
 | `PRAXIS_CLIENT_IP_HEADER` | off                               | Proxy header with the client address                       |
 | `PRAXIS_MATOMO_URL`       | off                               | Matomo installation for analytics                          |
 | `PRAXIS_MATOMO_SITE_ID`   | off                               | Matomo site ID                                             |
+| `PRAXIS_NOINDEX`          | off                               | Keep the site out of search results, e.g., a test instance |
 | `RUST_LOG`                | `info`                            | Log filter, e.g., `debug`                                  |
 
 Only set `PRAXIS_CLIENT_IP_HEADER` if the proxy overwrites that header.
 Otherwise, clients could set it themselves and get other clients blocked.
+
+A test instance that is reachable but shouldn't appear in search results
+needs `noindex = true`. A `Disallow` in `robots.txt` isn't enough, as search
+engines still list blocked URLs that other sites link to. To keep the instance
+private, also set `basicAuth` on its nginx virtual host.
 
 ## State
 

@@ -109,6 +109,17 @@ in
       default = null;
       description = "The cookie-less Matomo web analytics, or `null` for none.";
     };
+
+    noindex = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Whether to keep the site out of search results, e.g., for a test
+        instance that is reachable but not public. All responses then carry
+        `X-Robots-Tag: noindex, nofollow`. Canonical links still point to
+        `baseUrl`.
+      '';
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -135,6 +146,9 @@ in
       // lib.optionalAttrs (cfg.matomo != null) {
         PRAXIS_MATOMO_URL = cfg.matomo.url;
         PRAXIS_MATOMO_SITE_ID = toString cfg.matomo.siteId;
+      }
+      // lib.optionalAttrs cfg.noindex {
+        PRAXIS_NOINDEX = "true";
       };
 
       serviceConfig = {

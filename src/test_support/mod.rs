@@ -81,5 +81,6 @@ pub(crate) fn test_config() -> Config {
         matomo_url: None,
         matomo_site_id: None,
         client_ip_header: Some(HeaderName::from_static("x-real-ip")),
+        noindex: false,
     })
 }

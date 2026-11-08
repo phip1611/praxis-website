@@ -72,7 +72,7 @@ mod tests {
     use crate::content::pages::HOME_PATH;
     use crate::content::site::SITE;
     use crate::stats::clients::Browser;
-    use crate::test_support::{SEED_MARKER, TestApp};
+    use crate::test_support::{SEED_MARKER, TestApp, test_config};
     use axum::http::StatusCode;
     use std::iter;
 
@@ -244,6 +244,36 @@ mod tests {
         assert_eq!(today.bot_views, 1);
         assert_eq!(today.not_found, 1);
         assert_eq!(today.browsers.get(&Browser::Firefox), Some(&1));
+    }
+
+    /// With `noindex`, every response asks search engines to skip it,
+    /// including files, redirects, and errors. Without, none does.
+    #[tokio::test]
+    async fn noindex_covers_all_responses() {
+        let mut config = test_config();
+        config.noindex = true;
+        let hidden = TestApp::with_config(config);
+        let public = TestApp::new();
+
+        for path in [
+            "/",
+            "/kontakt",
+            "/robots.txt",
+            "/favicon.ico",
+            "/gibt-es-nicht/",
+        ] {
+            let response = hidden.get(path).await;
+
+            assert_eq!(
+                response.header("x-robots-tag"),
+                "noindex, nofollow",
+                "{path}"
+            );
+            assert!(
+                !public.get(path).await.headers.contains_key("x-robots-tag"),
+                "{path}"
+            );
+        }
     }
 
     /// Every response has the security headers, including errors and
