@@ -31,7 +31,7 @@ pub(crate) struct TestApp {
     pub(crate) clock: Arc<MockClock>,
     /// The store of the service.
     pub(crate) store: Arc<MemoryStore>,
-    /// The state directory, e.g., for the statistics.
+    /// The state directory, e.g., for the statistics and changed passwords.
     _state_dir: TempDir,
 }
 
@@ -177,6 +177,16 @@ impl TestApp {
         let cookie = cookie.map(|cookie| ("cookie", cookie));
         self.post_form_with(origin, path, fields, cookie.as_slice())
             .await
+    }
+
+    /// Submits the login form with the given credentials.
+    pub(crate) async fn login_with(&self, username: &str, password: &str) -> TestResponse {
+        self.post_form(
+            "/admin/login/",
+            &[("username", username), ("password", password)],
+            None,
+        )
+        .await
     }
 
     /// Submits the login form from the client with address `client_ip`, as

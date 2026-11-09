@@ -23,6 +23,7 @@
 //! - [`token`]: Random secrets and constant-time comparison.
 //! - [`password`]: Argon2id hashing and verification.
 //! - [`credentials`]: The accounts file and account lookup.
+//! - [`password_overrides`]: Passwords changed in the login area.
 //! - [`client_ip`]: The client address behind the reverse proxy.
 //! - [`throttle`]: Limits failed logins per client and per account.
 //! - [`rate_limit`]: Limits password checks of all clients together.
@@ -42,6 +43,7 @@ mod csrf;
 pub(crate) mod headers;
 pub(crate) mod origin;
 pub(crate) mod password;
+pub(crate) mod password_overrides;
 mod rate_limit;
 pub(crate) mod sanitize;
 pub(crate) mod session;

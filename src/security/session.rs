@@ -121,6 +121,16 @@ impl SessionStore {
         Some(session)
     }
 
+    /// Ends all sessions of `username` except the one of `keep_token`, e.g.,
+    /// after a password change.
+    pub(crate) fn revoke_others(&self, username: &str, keep_token: &str) {
+        let keep = digest(keep_token);
+        self.sessions
+            .lock()
+            .unwrap()
+            .retain(|key, record| *key == keep || record.session.username != username);
+    }
+
     /// Ends the session of `token`, if there is one.
     pub(crate) fn revoke(&self, token: &str) {
         self.sessions.lock().unwrap().remove(&digest(token));
@@ -195,6 +205,23 @@ mod tests {
         clock.advance(step);
 
         assert!(store.authenticate(&token).is_none());
+    }
+
+    /// After a password change, only the session that changed it survives,
+    /// and other accounts aren't affected.
+    #[test]
+    fn revoke_others_keeps_current_session_only() {
+        let (_, store, current) = store_with_session();
+        let other = store.create("dirk").expect("OS RNG should work in tests");
+        let foreign = store
+            .create("webmaster")
+            .expect("OS RNG should work in tests");
+
+        store.revoke_others("dirk", &current);
+
+        assert!(store.authenticate(&current).is_some());
+        assert!(store.authenticate(other.as_str()).is_none());
+        assert!(store.authenticate(foreign.as_str()).is_some());
     }
 
     /// A revoked token stops working immediately.

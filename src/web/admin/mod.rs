@@ -5,6 +5,7 @@
 mod editor;
 mod forms;
 mod login;
+mod password;
 mod stats;
 
 use crate::app::AppState;
@@ -26,6 +27,9 @@ pub(crate) const LOGIN_PATH: &str = "/admin/login/";
 /// The path of the access statistics.
 const STATS_PATH: &str = "/admin/statistik/";
 
+/// The path of the password change.
+const PASSWORD_PATH: &str = "/admin/passwort/";
+
 /// The path for logging out.
 const LOGOUT_PATH: &str = "/admin/logout/";
 
@@ -40,6 +44,7 @@ pub(super) fn routes() -> Router<AppState> {
         .route(LOGIN_PATH, get(login::show).post(login::submit))
         .route(LOGOUT_PATH, post(login::logout))
         .route(STATS_PATH, get(stats::show))
+        .route(PASSWORD_PATH, get(password::show).post(password::change))
         .layer(DefaultBodyLimit::max(MAX_FORM_BYTES))
         .layer(from_fn(private_headers))
 }

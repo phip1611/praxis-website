@@ -1,5 +1,5 @@
-# Exports the website as Nix package, with a development shell and the Nix
-# formatter.
+# Exports the website as Nix package and as NixOS module with a hardened
+# systemd service. See docs/deployment.md.
 
 {
   description = "Website of the general practice Dipl.-Med. Dirk Schuster";
@@ -20,7 +20,7 @@
       rust-overlay,
     }:
     let
-      # The service only targets Linux.
+      # The service only runs on Linux, as the module is systemd-specific.
       systems = [
         "aarch64-linux"
         "x86_64-linux"
@@ -33,8 +33,26 @@
         default = (pkgs.extend rust-overlay.overlays.default).callPackage ./nix/package.nix { };
       });
 
+      nixosModules = rec {
+        default = praxis-website;
+        # Defaults to the package of this flake, as the Rust of the system's
+        # nixpkgs may be too old.
+        praxis-website =
+          { lib, pkgs, ... }:
+          {
+            imports = [ ./nix/module.nix ];
+            services.praxis-website.package =
+              lib.mkDefault
+                self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+          };
+      };
+
       checks = forAllSystems (pkgs: {
         package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+        module = pkgs.testers.runNixOSTest {
+          imports = [ ./nix/tests/module.nix ];
+          defaults.services.praxis-website.package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+        };
       });
 
       devShells = forAllSystems (pkgs: {

@@ -12,7 +12,7 @@ use std::fmt::{self, Debug, Formatter};
 use std::fs;
 use std::io;
 use std::path::Path;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock, RwLock};
 use thiserror::Error;
 
 /// The maximum length of a username in bytes.
@@ -113,14 +113,19 @@ pub(crate) fn validate_username(username: &str) -> Result<(), UsernameError> {
 struct Account {
     /// The login name.
     username: String,
-    /// The password hash.
-    password_hash: PasswordHash,
+    /// The hash from the configuration, as PHC string. A password changed in
+    /// the login area replaces only [`Self::password_hash`], and records which
+    /// configured hash it replaced, see `password_overrides`.
+    configured_hash: String,
+    /// The current hash, from the configuration or a password change.
+    password_hash: Arc<PasswordHash>,
 }
 
-/// All accounts that may log in, fixed by the configuration.
+/// All accounts that may log in. The set of accounts is fixed by the
+/// configuration; only their passwords can change at runtime.
 pub(crate) struct CredentialStore {
     /// The accounts in file order.
-    accounts: Vec<Account>,
+    accounts: RwLock<Vec<Account>>,
 }
 
 impl CredentialStore {
@@ -163,33 +168,56 @@ impl CredentialStore {
                 .map_err(|source| CredentialsError::InvalidHash { line, source })?;
             accounts.push(Account {
                 username: username.to_string(),
-                password_hash,
+                configured_hash: hash.to_string(),
+                password_hash: Arc::new(password_hash),
             });
         }
         if accounts.is_empty() {
             return Err(CredentialsError::Empty);
         }
-        Ok(Self { accounts })
+        Ok(Self {
+            accounts: RwLock::new(accounts),
+        })
     }
 
     /// Creates a store with a single account.
     pub(crate) fn single(username: &str, password_hash: PasswordHash) -> Self {
         Self {
-            accounts: vec![Account {
+            accounts: RwLock::new(vec![Account {
                 username: username.to_string(),
-                password_hash,
-            }],
+                configured_hash: password_hash.to_phc_string(),
+                password_hash: Arc::new(password_hash),
+            }]),
         }
     }
 
     /// Returns the number of accounts.
-    pub(crate) const fn len(&self) -> usize {
-        self.accounts.len()
+    pub(crate) fn len(&self) -> usize {
+        self.accounts.read().unwrap().len()
     }
 
     /// Returns the canonical name of the account `username`, if there is one.
     pub(super) fn find(&self, username: &str) -> Option<String> {
-        Self::position(&self.accounts, username).map(|index| self.accounts[index].username.clone())
+        let accounts = self.accounts.read().unwrap();
+        Self::position(&accounts, username).map(|index| accounts[index].username.clone())
+    }
+
+    /// Returns the configured hash of the account `username`.
+    pub(super) fn configured_hash(&self, username: &str) -> Option<String> {
+        let accounts = self.accounts.read().unwrap();
+        Self::position(&accounts, username).map(|index| accounts[index].configured_hash.clone())
+    }
+
+    /// Replaces the current password hash of the account `username`. Returns
+    /// `false` if there is no such account.
+    pub(super) fn set_password(&self, username: &str, password_hash: PasswordHash) -> bool {
+        let mut accounts = self.accounts.write().unwrap();
+        let Some(index) = Self::position(&accounts, username) else {
+            return false;
+        };
+        accounts[index].password_hash = Arc::new(password_hash);
+        drop(accounts);
+        true
     }
 
     /// Verifies a login and returns the canonical account name on success.
@@ -197,19 +225,20 @@ impl CredentialStore {
     /// Unknown users are checked against a dummy hash, so that both cases take
     /// the same time. This is CPU-intensive: don't call it on the async runtime.
     pub(crate) fn verify(&self, username: &str, password: &str) -> Option<String> {
-        Self::position(&self.accounts, username).map_or_else(
-            || {
+        let account = {
+            let accounts = self.accounts.read().unwrap();
+            Self::position(&accounts, username).map(|index| {
+                let account = &accounts[index];
+                (account.username.clone(), Arc::clone(&account.password_hash))
+            })
+        };
+        match account {
+            Some((username, hash)) => hash.verify(password).then_some(username),
+            None => {
                 let _ = DUMMY.verify(password);
                 None
-            },
-            |index| {
-                let account = &self.accounts[index];
-                account
-                    .password_hash
-                    .verify(password)
-                    .then(|| account.username.clone())
-            },
-        )
+            }
+        }
     }
 
     /// Returns the index of the account `username`, comparing all accounts
@@ -237,7 +266,7 @@ impl Debug for CredentialStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{TEST_PASSWORD, TEST_USER, accounts_file};
+    use crate::test_support::{TEST_PASSWORD, TEST_USER, accounts_file, cheap_password_hash};
     use argon2::Params;
     use std::assert_matches;
     use tempfile::NamedTempFile;
@@ -371,6 +400,36 @@ mod tests {
             panic!("the value should match `Err(CredentialsError::Read {{ path, .. }})`");
         };
         assert_eq!(path, "/does/not/exist");
+    }
+
+    /// A changed password replaces the old one, and the configured hash stays
+    /// known for later comparison.
+    #[test]
+    fn set_password_replaces_current_hash() {
+        let store = CredentialStore::parse(&accounts_file(&[(TEST_USER, TEST_PASSWORD)]))
+            .expect("file should be valid");
+        let configured = store
+            .configured_hash(TEST_USER)
+            .expect("account should exist");
+        let new = PasswordHash::parse(&cheap_password_hash("a new long password"))
+            .expect("fixture should be valid");
+
+        assert!(store.set_password(TEST_USER, new));
+
+        assert!(store.verify(TEST_USER, "a new long password").is_some());
+        assert!(store.verify(TEST_USER, TEST_PASSWORD).is_none());
+        assert_eq!(store.configured_hash(TEST_USER), Some(configured));
+    }
+
+    /// Only configured accounts can get a password.
+    #[test]
+    fn set_password_rejects_unknown_account() {
+        let store = CredentialStore::parse(&accounts_file(&[(TEST_USER, TEST_PASSWORD)]))
+            .expect("file should be valid");
+        let hash = PasswordHash::parse(&cheap_password_hash("x")).expect("fixture should be valid");
+
+        assert!(!store.set_password("intruder", hash));
+        assert!(store.find("intruder").is_none());
     }
 
     /// Password hashes must not end up in logs through `{:?}`.

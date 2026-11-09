@@ -25,7 +25,7 @@ const DEV_USERNAME: &str = "admin";
 const DEV_PASSWORD: &str = "admin";
 
 /// How long open requests may take after SIGTERM. Below systemd's
-/// `TimeoutStopSec`, so that the statistics are saved before it kills us.
+/// `TimeoutStopSec` in `nix/module.nix`.
 const SHUTDOWN_GRACE: Duration = Duration::from_secs(10);
 
 /// Runs the server until SIGTERM or Ctrl+C.
