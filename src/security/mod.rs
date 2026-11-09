@@ -13,8 +13,10 @@
 //!
 //! # Overview
 //!
+//! - [`token`]: Random secrets.
 //! - [`headers`]: Security headers such as the Content Security Policy.
 //! - [`sanitize`]: The allowlist for the HTML of the news.
 
 pub(crate) mod headers;
 pub(crate) mod sanitize;
+pub(crate) mod token;

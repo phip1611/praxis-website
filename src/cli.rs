@@ -5,7 +5,7 @@
 //! Every option can also be set with an environment variable, which suits
 //! systemd units.
 
-use crate::config::BaseUrl;
+use crate::config::{BaseUrl, MatomoUrl};
 use clap::{Args, Parser, Subcommand};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
@@ -27,6 +27,9 @@ pub(crate) struct Cli {
 pub(crate) enum Command {
     /// Serves the website.
     Serve(ServeArgs),
+    /// Local development: no configuration needed, and the page reloads
+    /// after code changes.
+    Dev(DevArgs),
 }
 
 /// The options of the server.
@@ -39,6 +42,27 @@ pub(crate) struct ServeArgs {
     /// The public URL of the site, e.g., `https://praxis-dirkschuster.de`.
     #[arg(long, env = "PRAXIS_BASE_URL", value_parser = BaseUrl::parse)]
     pub(crate) base_url: BaseUrl,
+
+    /// The URL of the Matomo installation, e.g., `https://stats.example.com/`.
+    #[arg(
+        long,
+        env = "PRAXIS_MATOMO_URL",
+        value_parser = MatomoUrl::parse,
+        requires = "matomo_site_id"
+    )]
+    pub(crate) matomo_url: Option<MatomoUrl>,
+
+    /// The ID of this site in Matomo.
+    #[arg(long, env = "PRAXIS_MATOMO_SITE_ID", requires = "matomo_url")]
+    pub(crate) matomo_site_id: Option<u32>,
+}
+
+/// The options of the development server.
+#[derive(Clone, Copy, Debug, Args)]
+pub(crate) struct DevArgs {
+    /// The address to listen on.
+    #[arg(long, env = "PRAXIS_BIND", default_value_t = DEFAULT_BIND)]
+    pub(crate) bind: SocketAddr,
 }
 
 #[cfg(test)]
@@ -63,7 +87,10 @@ mod tests {
 
     /// Returns the options of the `serve` command line `args`.
     fn serve_args(args: &[&str]) -> ServeArgs {
-        let Command::Serve(args) = Cli::try_parse_from(args).expect("should parse").command;
+        let command = Cli::try_parse_from(args).expect("should parse").command;
+        let Command::Serve(args) = command else {
+            panic!("the value should match `Command::Serve(args)`");
+        };
         args
     }
 
@@ -72,6 +99,17 @@ mod tests {
     fn parses_defaults() {
         let args = serve_args(SERVE);
 
+        assert_eq!(args.bind, DEFAULT_BIND);
+    }
+
+    /// The development server needs no options.
+    #[test]
+    fn parses_dev() {
+        let cli = Cli::try_parse_from(["praxis-website", "dev"]).expect("should parse");
+
+        let Command::Dev(args) = cli.command else {
+            panic!("the value should match `Command::Dev(args)`");
+        };
         assert_eq!(args.bind, DEFAULT_BIND);
     }
 
@@ -96,6 +134,19 @@ mod tests {
     fn serve_requires_explicit_settings() {
         assert_eq!(
             parse_error(&["praxis-website", "serve"]),
+            ErrorKind::MissingRequiredArgument
+        );
+    }
+
+    /// Analytics need both the URL and the site ID.
+    #[test]
+    fn analytics_options_come_in_pairs() {
+        assert_eq!(
+            parse_error(&[SERVE, &["--matomo-url", "https://stats.test/"]].concat()),
+            ErrorKind::MissingRequiredArgument
+        );
+        assert_eq!(
+            parse_error(&[SERVE, &["--matomo-site-id", "9"]].concat()),
             ErrorKind::MissingRequiredArgument
         );
     }

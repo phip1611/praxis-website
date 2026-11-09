@@ -2,6 +2,8 @@
 
 //! The HTTP interface.
 
+mod dev;
+mod legacy;
 mod middleware;
 mod public;
 
@@ -11,7 +13,11 @@ use axum::middleware::{from_fn, from_fn_with_state};
 
 /// Builds the router with all routes and middleware.
 pub(crate) fn router(state: AppState) -> Router {
-    Router::new()
+    let mut router = Router::new();
+    if state.config.dev {
+        router = router.merge(dev::routes());
+    }
+    router
         .fallback(public::serve)
         // The last layer is the outermost, so timeouts get security headers
         // and are logged.

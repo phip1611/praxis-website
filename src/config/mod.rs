@@ -2,20 +2,26 @@
 
 //! The validated runtime configuration.
 
+mod analytics;
 mod base_url;
 
+pub(crate) use analytics::{Analytics, MatomoUrl};
 pub(crate) use base_url::BaseUrl;
 
-use crate::cli::ServeArgs;
+use crate::cli::{DevArgs, ServeArgs};
 use std::net::SocketAddr;
 
 /// The validated configuration of the service.
 #[derive(Clone, Debug)]
 pub(crate) struct Config {
+    /// Whether the local development mode is active.
+    pub(crate) dev: bool,
     /// The address to listen on.
     pub(crate) bind: SocketAddr,
     /// The public URL of the site, as seen by visitors.
     pub(crate) base_url: BaseUrl,
+    /// The Matomo configuration, if analytics are enabled.
+    pub(crate) analytics: Option<Analytics>,
 }
 
 impl Config {
@@ -23,8 +29,26 @@ impl Config {
     /// has already validated.
     pub(crate) fn production(args: ServeArgs) -> Self {
         Self {
+            dev: false,
             bind: args.bind,
             base_url: args.base_url,
+            analytics: args
+                .matomo_url
+                .zip(args.matomo_site_id)
+                .map(|(url, site_id)| Analytics::new(url, site_id)),
+        }
+    }
+
+    /// Creates the configuration of the development server.
+    pub(crate) fn dev(args: DevArgs) -> Self {
+        let base_url = BaseUrl::parse(&format!("http://localhost:{}", args.bind.port()))
+            .expect("the dev URL should be valid");
+
+        Self {
+            dev: true,
+            bind: args.bind,
+            base_url,
+            analytics: None,
         }
     }
 }
@@ -39,6 +63,8 @@ mod tests {
         ServeArgs {
             bind: DEFAULT_BIND,
             base_url: BaseUrl::parse("https://praxis.test").expect("URL should be valid"),
+            matomo_url: None,
+            matomo_site_id: None,
         }
     }
 
@@ -47,7 +73,30 @@ mod tests {
     fn production_uses_options() {
         let config = Config::production(production_args());
 
+        assert!(!config.dev);
         assert_eq!(config.base_url.origin(), "https://praxis.test");
         assert!(config.bind.ip().is_loopback());
+        assert!(config.analytics.is_none());
+    }
+
+    /// `cargo dev` works without any options.
+    #[test]
+    fn dev_mode_needs_no_options() {
+        let config = Config::dev(DevArgs { bind: DEFAULT_BIND });
+
+        assert!(config.dev);
+        assert_eq!(config.base_url.origin(), "http://localhost:8080");
+    }
+
+    /// The URL and the site ID make up the analytics configuration.
+    #[test]
+    fn analytics_combine_url_and_site_id() {
+        let args = ServeArgs {
+            matomo_url: Some(MatomoUrl::parse("https://stats.test/").expect("URL should be valid")),
+            matomo_site_id: Some(9),
+            ..production_args()
+        };
+
+        assert!(Config::production(args).analytics.is_some());
     }
 }

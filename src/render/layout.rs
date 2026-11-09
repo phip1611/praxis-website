@@ -85,6 +85,21 @@ pub(super) struct LayoutAssets {
     pub(super) tile: String,
 }
 
+/// The data that the analytics script needs.
+#[derive(Clone, Debug)]
+pub(super) struct AnalyticsView {
+    /// The URL of the local bootstrap script.
+    pub(super) script_url: String,
+    /// The tracking endpoint.
+    pub(super) tracker_url: String,
+    /// The tracking library.
+    pub(super) library_url: String,
+    /// The site ID.
+    pub(super) site_id: u32,
+    /// The tracking pixel for browsers without JavaScript.
+    pub(super) noscript_url: String,
+}
+
 /// Everything that the base template needs.
 #[derive(Clone, Debug)]
 pub(super) struct Layout {
@@ -115,4 +130,8 @@ pub(super) struct Layout {
     pub(super) nav: Vec<NavLink>,
     /// The stylesheet and icons.
     pub(super) assets: LayoutAssets,
+    /// Scripts to load.
+    pub(super) scripts: Vec<String>,
+    /// The analytics configuration, if enabled for this page.
+    pub(super) analytics: Option<AnalyticsView>,
 }

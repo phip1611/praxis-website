@@ -7,9 +7,12 @@ use crate::content::pages::{
     HOME_PATH, PageImage, PageSpec, ROBOTS_PATH, SITEMAP_PATH, home_title,
 };
 use crate::content::site::SITE;
+use crate::delivery::assets;
 use crate::delivery::cached::{CachePolicy, CachedResponse, Compression};
 use crate::delivery::snapshot::Snapshot;
-use crate::render::layout::{Layout, OpenGraph, OpenGraphImage, OpenGraphKind, ROBOTS_PUBLIC};
+use crate::render::layout::{
+    AnalyticsView, Layout, OpenGraph, OpenGraphImage, OpenGraphKind, ROBOTS_PUBLIC,
+};
 use crate::render::seo::json_ld::{self, ImageFacts, PageFacts};
 use crate::render::seo::robots::robots_txt;
 use crate::render::seo::sitemap::SitemapEntry;
@@ -144,7 +147,7 @@ impl SiteRenderer {
 
     /// Renders the page for unknown paths.
     fn render_not_found(&self) -> Result<String, RenderError> {
-        let layout = self.private_layout("Seite nicht gefunden");
+        let layout = self.private_layout("Seite nicht gefunden", Vec::new());
         Ok(NotFoundTemplate { layout: &layout }.render()?)
     }
 
@@ -208,6 +211,13 @@ impl SiteRenderer {
         });
         layout.json_ld = Some(json_ld);
         layout.site_title_is_heading = page.path == HOME_PATH;
+        layout.analytics = self.analytics.as_ref().map(|analytics| AnalyticsView {
+            script_url: self.assets.url(assets::ANALYTICS_SCRIPT).to_string(),
+            tracker_url: analytics.tracker_url(),
+            library_url: analytics.library_url(),
+            site_id: analytics.site_id(),
+            noscript_url: analytics.noscript_url(),
+        });
         layout
     }
 
@@ -275,7 +285,7 @@ mod tests {
     #[test]
     fn json_ld_cannot_close_script_element() {
         let renderer = renderer();
-        let mut layout = renderer.private_layout("Test");
+        let mut layout = renderer.private_layout("Test", Vec::new());
         let name = "</script><script>alert(1)";
         layout.json_ld = Some(serde_json::json!({ "name": name }));
 

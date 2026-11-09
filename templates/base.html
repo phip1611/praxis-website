@@ -33,6 +33,17 @@
     {%- if let Some(json_ld) = layout.json_ld %}
       <script type="application/ld+json">{{ json_ld|json|safe }}</script>
     {%- endif %}
+    {%- for script in layout.scripts %}
+      <script src="{{ script }}" defer></script>
+    {%- endfor %}
+    {%- if let Some(analytics) = layout.analytics %}
+      <script
+        src="{{ analytics.script_url }}"
+        defer
+        data-tracker-url="{{ analytics.tracker_url }}"
+        data-library-url="{{ analytics.library_url }}"
+        data-site-id="{{ analytics.site_id }}"></script>
+    {%- endif %}
   </head>
   <body>
     <a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
@@ -67,5 +78,15 @@
         <a href="tel:{{ layout.phone.international }}">{{ layout.phone.display }}</a>
       </p>
     </footer>
+    {%- if let Some(analytics) = layout.analytics %}
+      <noscript>
+        <p>
+          <img
+            referrerpolicy="no-referrer-when-downgrade"
+            src="{{ analytics.noscript_url }}"
+            alt="">
+        </p>
+      </noscript>
+    {%- endif %}
   </body>
 </html>

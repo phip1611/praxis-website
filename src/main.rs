@@ -24,7 +24,7 @@ mod server;
 mod test_support;
 mod web;
 
-use crate::cli::{Cli, Command, ServeArgs};
+use crate::cli::{Cli, Command};
 use crate::config::Config;
 use clap::Parser;
 use std::process::ExitCode;
@@ -33,14 +33,15 @@ use tracing::error;
 
 /// Parses the command line and runs the server.
 fn main() -> ExitCode {
-    let Command::Serve(args) = Cli::parse().command;
-    serve(args)
+    match Cli::parse().command {
+        Command::Serve(args) => serve(Config::production(args)),
+        Command::Dev(args) => serve(Config::dev(args)),
+    }
 }
 
 /// Runs the web server until it's stopped.
-fn serve(args: ServeArgs) -> ExitCode {
-    logging::init();
-    let config = Config::production(args);
+fn serve(config: Config) -> ExitCode {
+    logging::init(config.dev);
     let runtime = Builder::new_multi_thread()
         .enable_all()
         .build()

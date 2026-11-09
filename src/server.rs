@@ -17,12 +17,15 @@ use tracing::info;
 pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
     info!(
         public_url = config.base_url.origin(),
+        analytics = config.analytics.is_some(),
         "starting praxis-website {}",
         env!("CARGO_PKG_VERSION")
     );
 
     let bind = config.bind;
-    let state = AppState::new(&config)?;
+    let dev = config.dev;
+    let state = AppState::new(config)?;
+    let base = state.config.base_url.clone();
     let listener = TcpListener::bind(bind)
         .await
         .map_err(|source| StartupError::Io {
@@ -30,6 +33,9 @@ pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
             source,
         })?;
     info!("listening on {bind}");
+    if dev {
+        info!("development mode: open {}", base.join("/"));
+    }
 
     axum::serve(listener, web::router(state))
         .with_graceful_shutdown(shutdown_signal())

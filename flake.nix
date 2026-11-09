@@ -43,6 +43,8 @@
             # The Rust toolchain comes from rustup, so that the MSRV and
             # nightly are available as well.
             rustup
+            # Rebuilds and restarts the dev server on changes (bacon.toml).
+            bacon
             # The spell checker of the CI.
             typos
             # The formatter of the Nix files (`treefmt`), also via `nix fmt`.

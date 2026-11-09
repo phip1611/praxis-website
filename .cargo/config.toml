@@ -1,0 +1,3 @@
+[alias]
+# Local development server. See README.md.
+dev = "run -- dev"
