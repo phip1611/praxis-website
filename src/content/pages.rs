@@ -8,6 +8,12 @@ use serde::Deserialize;
 /// The path of the start page.
 pub(crate) const HOME_PATH: &str = "/";
 
+/// The path of the sitemap.
+pub(crate) const SITEMAP_PATH: &str = "/sitemap.xml";
+
+/// The path of the crawler rules.
+pub(crate) const ROBOTS_PATH: &str = "/robots.txt";
+
 /// The texts of the start page.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]

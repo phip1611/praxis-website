@@ -5,6 +5,7 @@
 use crate::content::pages::{PageBody, PageSpec};
 use crate::content::practice::{OpeningDay, Practice};
 use crate::render::layout::Layout;
+use crate::render::seo::sitemap::SitemapEntry;
 use crate::security::sanitize::SanitizedHtml;
 use askama::Template;
 
@@ -61,4 +62,12 @@ pub(super) struct PageTemplate<'a> {
 pub(super) struct NotFoundTemplate<'a> {
     /// The page frame.
     pub(super) layout: &'a Layout,
+}
+
+/// The XML sitemap.
+#[derive(Debug, Template)]
+#[template(path = "seo/sitemap.xml")]
+pub(super) struct SitemapTemplate<'a> {
+    /// The URLs.
+    pub(super) entries: &'a [SitemapEntry],
 }

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-//! Renders the pages from their templates.
+//! Renders all pages and the sitemap.
+//!
+//! `public` renders the precomputed snapshot for visitors. This file has the
+//! page frame.
 
-#[expect(dead_code, reason = "used by code that a later commit adds")]
 mod layout;
-#[expect(dead_code, reason = "used by code that a later commit adds")]
 mod public;
+mod seo;
 pub(crate) mod templates;
 
 use crate::config::{BaseUrl, Config};
@@ -13,8 +15,6 @@ use crate::content::pages::HOME_PATH;
 use crate::content::site::SITE;
 use crate::delivery::assets::{self, AssetCatalog};
 use crate::render::layout::{Layout, LayoutAssets, NavLink, ROBOTS_PRIVATE};
-use crate::render::templates::NotFoundTemplate;
-use askama::Template;
 use std::iter;
 use std::sync::Arc;
 use thiserror::Error;
@@ -59,16 +59,6 @@ impl SiteRenderer {
         )
     }
 
-    /// Renders the page for unknown paths.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`RenderError`] if the template fails.
-    pub(crate) fn render_not_found(&self) -> Result<String, RenderError> {
-        let layout = self.private_layout("Seite nicht gefunden");
-        Ok(NotFoundTemplate { layout: &layout }.render()?)
-    }
-
     /// Returns the frame that all pages share. It's private by default;
     /// public pages add their search engine metadata.
     fn base_layout(&self, title: String, description: &str, current: Option<&str>) -> Layout {
@@ -95,6 +85,7 @@ impl SiteRenderer {
             robots: ROBOTS_PRIVATE,
             canonical: None,
             open_graph: None,
+            json_ld: None,
             site_title_is_heading: false,
             site_name: &SITE.practice.site_name,
             tagline: &SITE.practice.tagline,
@@ -113,5 +104,10 @@ impl SiteRenderer {
                 tile: self.asset_url(assets::ICON_270),
             },
         }
+    }
+
+    /// Returns the logo for the structured data and previews.
+    fn logo_url(&self) -> String {
+        self.asset_url(&SITE.logo.asset)
     }
 }

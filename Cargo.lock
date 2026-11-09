@@ -994,10 +994,13 @@ dependencies = [
  "http-body-util",
  "jiff",
  "serde",
+ "serde_json",
  "sha2",
  "thiserror",
  "tokio",
  "toml",
+ "tower",
+ "tracing",
  "tracing-subscriber",
  "url",
 ]

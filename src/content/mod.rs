@@ -2,14 +2,7 @@
 
 //! The content of the website: practice data, pages, and the editable news.
 
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "used by code that a later commit adds")
-)]
 pub(crate) mod news;
-#[expect(dead_code, reason = "used by code that a later commit adds")]
 pub(crate) mod pages;
-#[expect(dead_code, reason = "used by code that a later commit adds")]
 pub(crate) mod practice;
-#[expect(dead_code, reason = "used by code that a later commit adds")]
 pub(crate) mod site;
