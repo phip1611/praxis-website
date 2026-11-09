@@ -26,7 +26,7 @@ pub(crate) enum CachePolicy {
 
 impl CachePolicy {
     /// Returns the `Cache-Control` value.
-    const fn header_value(self) -> &'static str {
+    pub(crate) const fn header_value(self) -> &'static str {
         match self {
             Self::Revalidate => "public, no-cache",
             Self::Immutable => "public, max-age=31536000, immutable",

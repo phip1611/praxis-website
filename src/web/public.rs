@@ -3,6 +3,7 @@
 //! Serves the precomputed public pages.
 
 use crate::app::AppState;
+use crate::delivery::cached::CachePolicy;
 use crate::stats::{self, Hit};
 use crate::web::legacy::{self, LegacyTarget};
 use axum::extract::State;
@@ -42,6 +43,9 @@ pub(super) async fn serve(
         Some(LegacyTarget::Gone) => return StatusCode::GONE.into_response(),
         None => {}
     }
+    if let Some(url) = state.renderer.assets().legacy_image_url(path) {
+        return moved_image(url);
+    }
     if !path.ends_with('/') {
         let with_slash = format!("{path}/");
         if snapshot.get(&with_slash).is_some() {
@@ -65,6 +69,18 @@ fn moved_permanently(target: &str) -> Response {
         [(header::LOCATION, location)],
     )
         .into_response()
+}
+
+/// Returns a `301 Moved Permanently` to the hashed URL of an old image.
+///
+/// Browsers have to check it, as the hashed URL changes with the image.
+fn moved_image(url: &str) -> Response {
+    let mut response = moved_permanently(url);
+    response.headers_mut().insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static(CachePolicy::Revalidate.header_value()),
+    );
+    response
 }
 
 #[cfg(test)]
@@ -173,18 +189,26 @@ mod tests {
         assert_eq!(response.header("location"), "/");
     }
 
-    /// Old image URLs keep working without redirect.
+    /// Old image URLs lead to the current URL of the image.
     #[tokio::test]
-    async fn serves_old_image_urls() {
+    async fn redirects_old_image_urls() {
         let app = TestApp::new();
+        let name = "Visitenkarte-Arztpraxis-Dirk-Schuster.png";
+        let url = app
+            .state
+            .renderer
+            .assets()
+            .url(&format!("images/{name}"))
+            .to_string();
 
         let response = app
-            .get("/wp-content/uploads/2015/09/Visitenkarte-Arztpraxis-Dirk-Schuster.png")
+            .get(&format!("/wp-content/uploads/2015/09/{name}"))
             .await;
 
-        assert_eq!(response.status, StatusCode::OK);
-        assert_eq!(response.header("content-type"), "image/png");
+        assert_eq!(response.status, StatusCode::MOVED_PERMANENTLY);
+        assert_eq!(response.header("location"), url);
         assert_eq!(response.header("cache-control"), "public, no-cache");
+        assert_eq!(app.get(&url).await.header("content-type"), "image/png");
     }
 
     /// Hashed asset URLs may be cached forever.

@@ -6,9 +6,8 @@
 //!
 //! Each file is served under a URL with a hash of its content, such as
 //! `/assets/style.0123456789abcdef.css`, so browsers may cache it forever and
-//! still get changes immediately. Images of the WordPress site also stay
-//! available under their old URLs, as other sites and search engines link to
-//! them.
+//! still get changes immediately. The old URLs of the WordPress images redirect
+//! to them, as other sites and search engines still link to those.
 
 use crate::delivery::cached::{CachePolicy, CachedResponse, Compression, content_hash};
 use axum::http::StatusCode;
@@ -43,23 +42,12 @@ const FAVICON: &str = "/favicon.ico";
 /// `build.rs`.
 const FILES: &[(&str, &str, &[u8])] = include!(concat!(env!("OUT_DIR"), "/assets.rs"));
 
-/// Returns the old URLs of a file, as other sites and search engines link to
-/// them.
-fn aliases(name: &str) -> impl Iterator<Item = String> {
-    let legacy = name
-        .strip_prefix("images/")
-        .filter(|file| file.ends_with(".png"))
-        .map(|file| format!("{LEGACY_UPLOADS}{file}"));
-    let favicon = (name == ICON_32).then(|| FAVICON.to_string());
-    legacy.into_iter().chain(favicon)
-}
-
 /// The embedded files with their URLs and precomputed responses.
 #[derive(Debug)]
 pub(crate) struct AssetCatalog {
     /// The hashed URL of each file by name.
     urls: HashMap<&'static str, String>,
-    /// The responses by path, including aliases.
+    /// The responses by path, including the favicon.
     routes: Vec<(String, Arc<CachedResponse>)>,
 }
 
@@ -85,10 +73,9 @@ impl AssetCatalog {
                 ))
             };
             routes.push((url.clone(), response(CachePolicy::Immutable)));
-            // The content behind an alias may change, so it must be checked.
-            let alias_response = response(CachePolicy::Revalidate);
-            for alias in aliases(name) {
-                routes.push((alias, Arc::clone(&alias_response)));
+            if name == ICON_32 {
+                // The content behind this path may change, so it must be checked.
+                routes.push((FAVICON.to_string(), response(CachePolicy::Revalidate)));
             }
             urls.insert(name, url);
         }
@@ -105,6 +92,18 @@ impl AssetCatalog {
         self.urls
             .get(name)
             .expect("asset names are fixed in the code, so they should be embedded")
+    }
+
+    /// Returns the hashed URL of the image that the WordPress site served at
+    /// `path`, if there is one.
+    pub(crate) fn legacy_image_url(&self, path: &str) -> Option<&str> {
+        let file = path.strip_prefix(LEGACY_UPLOADS)?;
+        if !file.ends_with(".png") {
+            return None;
+        }
+        self.urls
+            .get(format!("images/{file}").as_str())
+            .map(String::as_str)
     }
 
     /// Returns all paths with their responses.
@@ -154,18 +153,32 @@ mod tests {
         }
     }
 
-    /// The old WordPress image URLs keep working.
+    /// The old WordPress image URLs lead to the hashed URLs of the images.
     #[test]
-    fn legacy_image_urls_are_served() {
+    fn legacy_image_urls_lead_to_hashed_urls() {
+        let catalog = AssetCatalog::new();
+        let name = "Visitenkarte-Arztpraxis-Dirk-Schuster.png";
+
+        assert_eq!(
+            catalog.legacy_image_url(&format!("{LEGACY_UPLOADS}{name}")),
+            Some(catalog.url(&format!("images/{name}")))
+        );
+        assert_eq!(
+            catalog.legacy_image_url(&format!("{LEGACY_UPLOADS}gone.png")),
+            None
+        );
+        assert_eq!(catalog.legacy_image_url("/images/logo.png"), None);
+    }
+
+    /// Only the favicon has a second path. Old image URLs redirect instead,
+    /// so that each image has one URL.
+    #[test]
+    fn only_favicon_has_a_second_path() {
         let catalog = AssetCatalog::new();
         let paths: Vec<_> = catalog.routes().map(|(path, _)| path).collect();
 
-        assert!(
-            paths
-                .contains(&"/wp-content/uploads/2015/09/Visitenkarte-Arztpraxis-Dirk-Schuster.png")
-        );
-        assert!(paths.contains(&"/wp-content/uploads/2015/09/cropped-Logo-und-Favicon-32x32.png"));
-        assert!(paths.contains(&"/favicon.ico"));
+        assert!(paths.contains(&FAVICON));
+        assert!(!paths.iter().any(|path| path.starts_with(LEGACY_UPLOADS)));
     }
 
     /// The stylesheet and the scripts are minified: their comments, such as
