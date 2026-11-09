@@ -1,0 +1,42 @@
+name: Nix
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [ main ]
+
+# Newer pushes to a PR cancel its outdated runs. Every push to main keeps
+# its result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
+
+permissions:
+  contents: read
+  # Lets the cache action delete outdated caches.
+  actions: write
+
+jobs:
+  # Builds the package, including its tests, and checks the flake outputs.
+  flake_check:
+    name: nix flake check (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ ubuntu-latest, ubuntu-24.04-arm ]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/*.nix', 'flake.lock', 'Cargo.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
+          gc-max-store-size-linux: 2G
+          purge: true
+          purge-prefixes: nix-${{ runner.os }}-${{ runner.arch }}-
+          purge-created: 0
+          purge-last-accessed: P7D
+          purge-primary-key: never
+      - run: nix flake check --print-build-logs
