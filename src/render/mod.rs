@@ -56,7 +56,6 @@ impl SiteRenderer {
     }
 
     /// Returns the embedded files.
-    #[cfg(test)]
     pub(crate) fn assets(&self) -> &AssetCatalog {
         &self.assets
     }

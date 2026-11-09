@@ -3,8 +3,8 @@
 //! URLs of the WordPress site that no longer exist as pages.
 //!
 //! Search engines, bookmarks, and other sites may still point to them, so
-//! they redirect to the matching new page. Old image URLs are served directly
-//! by [`crate::delivery::assets`].
+//! they redirect to the matching new page. Old image URLs are handled by
+//! [`crate::delivery::assets::AssetCatalog::legacy_image_url`].
 
 use crate::content::pages::{HOME_PATH, SITEMAP_PATH};
 use crate::web::admin::{EDITOR_PATH, LOGIN_PATH};
