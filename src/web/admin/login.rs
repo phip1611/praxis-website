@@ -8,7 +8,7 @@ use crate::security::authenticator::LoginError;
 use crate::security::client_ip;
 use crate::web::AppError;
 use crate::web::admin::forms::{CsrfProtected, SameOriginForm, SessionForm};
-use crate::web::admin::{STATS_PATH, current_session};
+use crate::web::admin::{EDITOR_PATH, current_session};
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{Html, IntoResponse, Redirect, Response};
@@ -49,13 +49,13 @@ impl CsrfProtected for LogoutForm {
     }
 }
 
-/// Shows the login form, or the statistics if already logged in.
+/// Shows the login form, or the editor if already logged in.
 pub(super) async fn show(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Response, AppError> {
     if current_session(&state, &headers).is_some() {
-        return Ok(Redirect::to(STATS_PATH).into_response());
+        return Ok(Redirect::to(EDITOR_PATH).into_response());
     }
     Ok(Html(state.renderer.render_login("", None)?).into_response())
 }
@@ -82,7 +82,7 @@ pub(super) async fn submit(
             return Ok((
                 StatusCode::SEE_OTHER,
                 [
-                    (header::LOCATION, HeaderValue::from_static(STATS_PATH)),
+                    (header::LOCATION, HeaderValue::from_static(EDITOR_PATH)),
                     (header::SET_COOKIE, cookie),
                 ],
             )
@@ -125,10 +125,7 @@ pub(super) async fn submit(
 /// Ends the session and returns to the start page.
 pub(super) async fn logout(
     State(state): State<AppState>,
-    SessionForm {
-        admin,
-        form: LogoutForm { .. },
-    }: SessionForm<LogoutForm>,
+    SessionForm { admin, .. }: SessionForm<LogoutForm>,
 ) -> Response {
     state.auth.sessions().revoke(&admin.token);
     info!(account = admin.session.username, "logged out");
@@ -153,7 +150,7 @@ mod tests {
     use std::time::Duration;
     use tokio::time;
 
-    /// Valid credentials set a hardened cookie and open the login area.
+    /// Valid credentials set a hardened cookie and open the editor.
     #[tokio::test]
     async fn login_sets_session_cookie() {
         let app = TestApp::new();
@@ -167,7 +164,7 @@ mod tests {
             .await;
 
         assert_eq!(response.status, StatusCode::SEE_OTHER);
-        assert_eq!(response.header("location"), "/admin/statistik/");
+        assert_eq!(response.header("location"), "/admin/");
         let cookie = response.header("set-cookie");
         assert!(cookie.starts_with("__Host-praxis-session="));
         assert!(cookie.contains("HttpOnly"));
@@ -253,7 +250,7 @@ mod tests {
         assert_eq!(response.status, StatusCode::FORBIDDEN);
     }
 
-    /// A logged-in user goes straight to the statistics.
+    /// A logged-in user goes straight to the editor.
     #[tokio::test]
     async fn login_page_redirects_when_logged_in() {
         let app = TestApp::new();
@@ -262,7 +259,7 @@ mod tests {
         let response = session.get("/admin/login/").await;
 
         assert_eq!(response.status, StatusCode::SEE_OTHER);
-        assert_eq!(response.header("location"), "/admin/statistik/");
+        assert_eq!(response.header("location"), "/admin/");
     }
 
     /// Logging out ends the session on the server and clears the cookie.
@@ -277,10 +274,7 @@ mod tests {
 
         assert_eq!(response.status, StatusCode::SEE_OTHER);
         assert!(response.header("set-cookie").contains("Max-Age=0"));
-        assert_eq!(
-            session.get("/admin/statistik/").await.status,
-            StatusCode::SEE_OTHER
-        );
+        assert_eq!(session.get("/admin/").await.status, StatusCode::SEE_OTHER);
     }
 
     /// Other sites can't log a visitor out.
@@ -292,9 +286,6 @@ mod tests {
         let response = session.post("/admin/logout/", &[("csrf", "forged")]).await;
 
         assert_eq!(response.status, StatusCode::FORBIDDEN);
-        assert_eq!(
-            session.get("/admin/statistik/").await.status,
-            StatusCode::OK
-        );
+        assert_eq!(session.get("/admin/").await.status, StatusCode::OK);
     }
 }

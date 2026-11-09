@@ -4,7 +4,7 @@
 
 use crate::delivery::cached::CachedResponse;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 /// All public responses by path, plus the error page.
 #[derive(Debug)]
@@ -38,6 +38,35 @@ impl Snapshot {
     #[cfg(test)]
     pub(crate) fn paths(&self) -> impl Iterator<Item = &str> {
         self.routes.keys().map(String::as_str)
+    }
+}
+
+/// The current snapshot, replaced atomically after edits.
+///
+/// Requests keep the snapshot they started with, so they never see a mix of
+/// old and new pages.
+#[derive(Debug)]
+pub(crate) struct SiteCache {
+    /// The current snapshot.
+    current: RwLock<Arc<Snapshot>>,
+}
+
+impl SiteCache {
+    /// Creates the cache with an initial snapshot.
+    pub(crate) fn new(snapshot: Snapshot) -> Self {
+        Self {
+            current: RwLock::new(Arc::new(snapshot)),
+        }
+    }
+
+    /// Returns the current snapshot.
+    pub(crate) fn current(&self) -> Arc<Snapshot> {
+        self.current.read().unwrap().clone()
+    }
+
+    /// Replaces the current snapshot.
+    pub(crate) fn publish(&self, snapshot: Snapshot) {
+        *self.current.write().unwrap() = Arc::new(snapshot);
     }
 }
 
@@ -75,5 +104,20 @@ mod tests {
         );
         assert!(snapshot.get("/unknown").is_none());
         assert_eq!(snapshot.not_found().body(), b"404");
+    }
+
+    /// Publishing replaces the snapshot, while holders of the old one keep it.
+    #[test]
+    fn publish_swaps_snapshot_atomically() {
+        let cache = SiteCache::new(snapshot("old"));
+        let before = cache.current();
+
+        cache.publish(snapshot("new"));
+
+        assert_eq!(before.get("/").map(CachedResponse::body), Some(&b"old"[..]));
+        assert_eq!(
+            cache.current().get("/").map(CachedResponse::body),
+            Some(&b"new"[..])
+        );
     }
 }

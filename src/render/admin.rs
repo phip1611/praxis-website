@@ -3,14 +3,37 @@
 //! Renders the login area. Unlike public pages, these pages are rendered per
 //! request, as they depend on the session.
 
+use crate::clock::local_time_zone;
+use crate::content::news::NewsDocument;
+use crate::delivery::assets;
 use crate::render::layout::Layout;
-use crate::render::templates::{LoginTemplate, StatsDayRow, StatsPageRow, StatsTemplate};
+use crate::render::templates::{
+    EditorTemplate, LoginTemplate, Notice, StatsDayRow, StatsPageRow, StatsTemplate,
+};
 use crate::render::{RenderError, SiteRenderer};
 use crate::security::credentials::MAX_USERNAME_BYTES;
 use crate::security::password::MAX_PASSWORD_BYTES;
+use crate::security::sanitize::SanitizedHtml;
 use crate::stats::{DayStats, tracked_pages};
 use askama::Template;
+use jiff::Timestamp;
 use jiff::civil::{Date, Weekday};
+
+/// What the editor shows.
+#[derive(Debug)]
+pub(crate) struct EditorView<'a> {
+    /// The logged-in account.
+    pub(crate) username: &'a str,
+    /// The content in the editor. Differs from the stored content after a
+    /// failed save.
+    pub(crate) html: &'a SanitizedHtml,
+    /// The stored document.
+    pub(crate) stored: &'a NewsDocument,
+    /// The CSRF token of the session.
+    pub(crate) csrf: &'a str,
+    /// The message to show, if any.
+    pub(crate) notice: Option<Notice>,
+}
 
 impl SiteRenderer {
     /// Renders the login form.
@@ -33,6 +56,30 @@ impl SiteRenderer {
             error,
             max_username: MAX_USERNAME_BYTES,
             max_password: MAX_PASSWORD_BYTES,
+        }
+        .render()?)
+    }
+
+    /// Renders the editor.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`RenderError`] if the template fails.
+    pub(crate) fn render_editor(&self, view: &EditorView<'_>) -> Result<String, RenderError> {
+        let scripts = vec![self.assets.url(assets::EDITOR_SCRIPT).to_string()];
+        let mut layout = self.private_layout("Aktuelle Informationen bearbeiten", scripts);
+        if view.notice.as_ref().is_some_and(Notice::is_error) {
+            mark_error(&mut layout);
+        }
+        Ok(EditorTemplate {
+            layout: &layout,
+            username: view.username,
+            html: view.html,
+            revision: view.stored.revision,
+            modified_at: &format_local_time(view.stored.modified_at),
+            modified_by: &view.stored.modified_by,
+            csrf: view.csrf,
+            notice: view.notice.as_ref(),
         }
         .render()?)
     }
@@ -102,6 +149,13 @@ fn format_german_date(date: Date) -> String {
     format!("{weekday}, {}", date.strftime("%d.%m.%Y"))
 }
 
+/// Formats a time in the local time zone, e.g., `07.11.2026 um 09:31 Uhr`.
+fn format_local_time(time: Timestamp) -> String {
+    time.to_zoned(local_time_zone())
+        .strftime("%d.%m.%Y um %H:%M Uhr")
+        .to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -126,6 +180,16 @@ mod tests {
 
         assert!(failed.contains("<title>Fehler: Anmeldung"));
         assert!(fresh.contains("<title>Anmeldung"));
+    }
+
+    /// Times are shown in German local time, including daylight saving time.
+    #[test]
+    fn format_local_time_uses_german_time() {
+        let winter: Timestamp = "2026-11-07T08:31:14Z".parse().expect("should parse");
+        let summer: Timestamp = "2026-07-01T08:00:00Z".parse().expect("should parse");
+
+        assert_eq!(format_local_time(winter), "07.11.2026 um 09:31 Uhr");
+        assert_eq!(format_local_time(summer), "01.07.2026 um 10:00 Uhr");
     }
 
     /// Dates in the statistics have a German weekday.

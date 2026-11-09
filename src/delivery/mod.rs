@@ -2,8 +2,8 @@
 
 //! Precomputed HTTP responses.
 //!
-//! All public pages are rendered and compressed once, at startup, and are
-//! then served from memory. Requests never run templates
+//! All public pages are rendered and compressed once, at startup and after
+//! every edit, and are then served from memory. Requests never run templates
 //! or compression, which keeps them fast and their behavior predictable.
 
 pub(crate) mod assets;

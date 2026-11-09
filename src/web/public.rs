@@ -28,7 +28,7 @@ pub(super) async fn serve(
             .into_response();
     }
     let path = uri.path();
-    let snapshot = &state.site;
+    let snapshot = state.site.current();
     if let Some(page) = snapshot.get(path) {
         if method == Method::GET && stats::is_tracked(path) {
             let user_agent = headers

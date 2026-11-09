@@ -3,11 +3,11 @@
 //! # praxis-website
 //!
 //! The website of the general practice Dipl.-Med. Dirk Schuster in
-//! Thalheim/Erzgebirge, with a login area for the access statistics.
+//! Thalheim/Erzgebirge, with a login area to edit the news on the start page.
 //!
 //! The service speaks plain HTTP and runs behind a reverse proxy that
 //! terminates TLS. All public pages are rendered and compressed into memory
-//! at startup, see the `delivery` module. Security-relevant
+//! at startup and after each edit, see the `delivery` module. Security-relevant
 //! code lives in the `security` module.
 
 mod app;

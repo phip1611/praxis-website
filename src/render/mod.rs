@@ -12,6 +12,8 @@ mod public;
 mod seo;
 pub(crate) mod templates;
 
+pub(crate) use admin::EditorView;
+
 use crate::config::{Analytics, BaseUrl, Config};
 use crate::content::pages::HOME_PATH;
 use crate::content::site::SITE;

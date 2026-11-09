@@ -26,14 +26,14 @@ features and list the ones the code needs.
 
 ## Architecture
 
-Public pages never run templates per request. At startup, `render` produces
-every page and the sitemap, and `delivery` compresses them
-(Brotli, gzip) into an immutable snapshot. A request only negotiates the
-encoding and checks the ETag.
+Public pages never run templates per request. At startup and after each edit,
+`render` produces every page and the sitemap, and `delivery`
+compresses them (Brotli, gzip) into an immutable snapshot. A request only
+negotiates the encoding and checks the ETag.
 
 | Module     | Responsibility                                                                |
 |------------|-------------------------------------------------------------------------------|
-| `content`  | Practice data, the page table with paths and metadata, and the news           |
+| `content`  | Practice data, the page table with paths and metadata, and the editable news  |
 | `render`   | askama templates, page frame, JSON-LD, sitemap                                |
 | `delivery` | Embedded assets with hashed URLs, compression, the snapshot                   |
 | `web`      | Router, public and legacy routes, login area, middleware                      |
@@ -57,20 +57,26 @@ recreated by hand, including the WebP variants (`cwebp -q 80 -m 6`).
 `when` arm in `templates/page.html`. Navigation, sitemap, statistics, and the
 route tests pick it up from that file.
 
+**A new editor feature:** the editor (`assets/editor.js`) may only produce
+markup that passes the allowlist in `src/security/sanitize.rs`. Formatting
+needs a CSS class, not a `style` attribute, as the Content Security Policy
+forbids inline styles: add the class to the allowlist, to `assets/style.css`,
+and the button to `templates/admin/editor.html`.
+
 **An old URL that should redirect:** add it to `src/web/legacy.rs`. A test
 checks that every target exists.
 
 ## Tests
 
 Tests use the fixtures in `src/test_support/`: `TestApp` runs the whole router
-in memory with a mock clock, and `LoggedIn` is a logged-in browser session. A
-typical test only states the interesting steps:
+in memory with a mock clock and an in-memory store, and `LoggedIn` is a
+logged-in browser session. A typical test only states the interesting steps:
 
 ```rust
 let app = TestApp::new();
 let session = app.login().await;
-let stats = session.get("/admin/statistik/").await;
-check!(stats.visible_text().contains("Zugriffsstatistik"));
+session.save_news("<p>Praxis im Urlaub</p>").await;
+assert!(app.get("/").await.text().contains("Praxis im Urlaub"));
 ```
 
 [bacon]: https://dystroy.org/bacon/

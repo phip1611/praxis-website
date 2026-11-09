@@ -6,3 +6,4 @@ pub(crate) mod news;
 pub(crate) mod pages;
 pub(crate) mod practice;
 pub(crate) mod site;
+pub(crate) mod store;

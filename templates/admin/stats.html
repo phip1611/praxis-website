@@ -2,6 +2,7 @@
 {% block content %}
   <article class="entry admin">
     <h1 class="entry-title">Zugriffsstatistik</h1>
+    {% let current = "stats" %}{% include "admin/links.html" %}
     <p>
       In den letzten {{ period_days }} Tagen wurden die Seiten <strong>{{ total_views }}</strong>
       Mal aufgerufen, dazu {{ total_bot_views }} Mal von Suchmaschinen und anderen Programmen.

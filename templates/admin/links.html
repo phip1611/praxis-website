@@ -1,0 +1,7 @@
+<nav class="admin-links" aria-label="Anmeldebereich">
+  <a href="/admin/"{% if current == "editor" %} aria-current="page"{% endif %}>Aktuelle
+  Informationen bearbeiten</a>
+  <a
+    href="/admin/statistik/"
+    {%- if current == "stats" %} aria-current="page"{% endif %}>Zugriffsstatistik</a>
+</nav>

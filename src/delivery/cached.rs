@@ -17,8 +17,8 @@ const HASH_HEX_DIGITS: usize = 16;
 /// How clients and proxies may cache a response.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum CachePolicy {
-    /// Cache, but check for changes on every use. For pages, so that changes
-    /// show up immediately.
+    /// Cache, but check for changes on every use. For pages, as the news
+    /// must show up immediately after an edit.
     Revalidate,
     /// Cache forever. Only for URLs that contain a hash of the content.
     Immutable,

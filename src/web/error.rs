@@ -2,6 +2,7 @@
 
 //! Unexpected failures in request handlers.
 
+use crate::persist::StoreError;
 use crate::render::RenderError;
 use crate::security::token::RandomError;
 use axum::http::StatusCode;
@@ -23,6 +24,9 @@ pub(super) enum AppError {
     /// Rendering a page failed.
     #[error(transparent)]
     Render(#[from] RenderError),
+    /// Saving the news failed.
+    #[error(transparent)]
+    Store(#[from] StoreError),
     /// The random number generator failed.
     #[error(transparent)]
     Random(#[from] RandomError),

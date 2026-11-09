@@ -8,13 +8,17 @@
 //! Policy can forbid inline styles.
 
 use ammonia::{Builder, UrlRelative};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt::{self, Display, Formatter};
 use std::sync::LazyLock;
 
-/// The allowed elements: the formatting of the news, plus `b`, `i`,
-/// headings, and ordered lists for HTML written by hand. All other elements
-/// are removed, while their text stays.
+/// The allowed elements: what the visual editor produces, plus `b`, `i`,
+/// headings, and ordered lists for HTML written by hand in the fallback text
+/// field. All other elements are removed, while their text stays.
+///
+/// A new editor feature has to fit through this allowlist, see
+/// docs/developer.md.
 const ALLOWED_TAGS: [&str; 14] = [
     "a", "b", "br", "em", "h2", "h3", "hr", "i", "li", "ol", "p", "span", "strong", "ul",
 ];
@@ -58,7 +62,11 @@ static SANITIZER: LazyLock<Builder<'static>> = LazyLock::new(|| {
 });
 
 /// HTML that went through the allowlist.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+///
+/// Deserialization sanitizes as well, so manual edits of the state file can't
+/// bypass the allowlist.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(from = "String", into = "String")]
 pub(crate) struct SanitizedHtml(String);
 
 impl SanitizedHtml {
@@ -71,6 +79,25 @@ impl SanitizedHtml {
     #[cfg(test)]
     pub(crate) fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Returns the length of the HTML in bytes.
+    pub(crate) const fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl From<String> for SanitizedHtml {
+    /// Sanitizes `html`.
+    fn from(html: String) -> Self {
+        Self::sanitize(&html)
+    }
+}
+
+impl From<SanitizedHtml> for String {
+    /// Returns the sanitized HTML.
+    fn from(html: SanitizedHtml) -> Self {
+        html.0
     }
 }
 
@@ -90,9 +117,9 @@ mod tests {
         SanitizedHtml::sanitize(html).as_str().to_string()
     }
 
-    /// All formatting of the news survives without changes.
+    /// All formatting that the editor offers survives without changes.
     #[test]
-    fn keeps_news_formatting() {
+    fn keeps_editor_formatting() {
         let html = "<p class=\"text-center\"><strong>a</strong> <em>b</em> \
                     <span class=\"text-red\">c</span></p><hr><ul><li>d</li></ul>";
 
@@ -197,5 +224,25 @@ mod tests {
         let seed = include_str!("../../content/aktuelle-informationen.html").trim();
 
         assert_eq!(clean(seed), seed);
+    }
+
+    /// A manipulated state file can't inject markup.
+    #[test]
+    fn deserializing_sanitizes() {
+        let html: SanitizedHtml = serde_json::from_str("\"<script>alert(1)</script><p>a</p>\"")
+            .expect("JSON string should parse");
+
+        assert_eq!(html.as_str(), "<p>a</p>");
+    }
+
+    /// Serializing produces a plain JSON string.
+    #[test]
+    fn serializes_as_string() {
+        let html = SanitizedHtml::sanitize("<p>a</p>");
+
+        assert_eq!(
+            serde_json::to_string(&html).expect("should serialize"),
+            "\"<p>a</p>\""
+        );
     }
 }

@@ -5,6 +5,7 @@
 use crate::app::{AppState, StartupError};
 use crate::clock::SystemClock;
 use crate::config::{AccountsSource, Config};
+use crate::content::store::JsonFileStore;
 use crate::security::credentials::CredentialStore;
 use crate::security::password::PasswordHash;
 use crate::{stats, web};
@@ -58,9 +59,10 @@ pub(crate) async fn run(config: Config) -> Result<(), StartupError> {
         warn!("the public URL isn't HTTPS, so the session cookie lacks the Secure attribute");
     }
 
+    let store = Arc::new(JsonFileStore::new(&config.state_dir));
     let bind = config.bind;
     let dev = config.dev;
-    let state = AppState::new(config, Arc::new(SystemClock), credentials)?;
+    let state = AppState::new(config, Arc::new(SystemClock), store, credentials)?;
     let base = state.config.base_url.clone();
     let listener = TcpListener::bind(bind)
         .await

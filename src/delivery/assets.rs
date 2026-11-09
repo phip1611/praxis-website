@@ -15,6 +15,8 @@ use std::sync::Arc;
 
 /// The stylesheet of all pages.
 pub(crate) const STYLESHEET: &str = "style.css";
+/// The visual editor of the login area.
+pub(crate) const EDITOR_SCRIPT: &str = "editor.js";
 /// Starts the Matomo tracking.
 pub(crate) const ANALYTICS_SCRIPT: &str = "analytics.js";
 /// Reloads pages in the development mode.
@@ -171,6 +173,7 @@ mod tests {
 
         for name in [
             STYLESHEET,
+            EDITOR_SCRIPT,
             ANALYTICS_SCRIPT,
             LIVE_RELOAD_SCRIPT,
             ICON_32,
