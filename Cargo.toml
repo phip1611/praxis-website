@@ -20,10 +20,23 @@ rust-version = "1.97"
 resolver = "3"
 
 [dependencies]
+ammonia = { version = "4.2", default-features = false }
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio"] }
+brotli = { version = "9.1", default-features = false, features = ["std"] }
 clap = { version = "4.6", default-features = false, features = ["color", "derive", "env", "error-context", "help", "std", "suggestions", "usage"] }
+flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
+jiff = { version = "0.2", default-features = false, features = ["std"] }
+serde = { version = "1.0", default-features = false, features = ["derive", "std"] }
+sha2 = { version = "0.11", default-features = false }
 thiserror = { version = "2.0", default-features = false, features = ["std"] }
-tracing-subscriber = { version = "0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "std"] }
+tokio = { version = "1.54", default-features = false, features = ["macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
+toml = { version = "1.1", default-features = false, features = ["parse", "serde", "std"] }
+# `tracing-log` forwards the `log` records of ammonia's HTML parser.
+tracing-subscriber = { version = "0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "std", "tracing-log"] }
 url = { version = "2.5", default-features = false, features = ["std"] }
+
+[dev-dependencies]
+http-body-util = { version = "0.1", default-features = false }
 
 [lints.rust]
 missing_debug_implementations = "deny"
@@ -62,3 +75,13 @@ multiple_crate_versions = "allow"
 # Contradicts `unreachable_pub`, which wants `pub(crate)` in a binary crate.
 redundant_pub_crate = "allow"
 
+# These crates run password hashing and compression, which take seconds when
+# unoptimized. Optimizing them keeps "cargo run" and "cargo test" fast.
+[profile.dev.package.brotli]
+opt-level = 3
+[profile.dev.package.brotli-decompressor]
+opt-level = 3
+[profile.dev.package.alloc-no-stdlib]
+opt-level = 3
+[profile.dev.package.miniz_oxide]
+opt-level = 3

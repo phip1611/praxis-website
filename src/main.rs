@@ -11,7 +11,17 @@ mod cli;
     expect(dead_code, reason = "used by code that a later commit adds")
 )]
 mod config;
+mod content;
+mod delivery;
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "used by code that a later commit adds")
+)]
+mod hex;
 mod logging;
+mod security;
+#[cfg(test)]
+mod test_support;
 
 use crate::cli::{Cli, Command, ServeArgs};
 use crate::config::Config;

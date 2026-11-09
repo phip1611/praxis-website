@@ -1,0 +1,21 @@
+# Configuration for the typos spell checker utility (<https://github.com/crate-ci/typos>).
+
+[files]
+# The website content is German, the spell checker only knows English.
+extend-exclude = [
+  "content/",
+  "templates/",
+]
+
+[default]
+# Hex digests in test vectors.
+extend-ignore-identifiers-re = ["^[0-9a-f]{16,}$"]
+
+[default.extend-words]
+# German words in user-facing strings of the code.
+Adresse = "Adresse"
+als = "als"
+Ein = "Ein"
+ist = "ist"
+oder = "oder"
+Sie = "Sie"
