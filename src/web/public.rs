@@ -3,6 +3,8 @@
 //! Serves the precomputed public pages.
 
 use crate::app::AppState;
+use crate::stats::bots::is_bot;
+use crate::stats::{self, Hit};
 use crate::web::legacy::{self, LegacyTarget};
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, Uri, header};
@@ -28,6 +30,15 @@ pub(super) async fn serve(
     let path = uri.path();
     let snapshot = &state.site;
     if let Some(page) = snapshot.get(path) {
+        if method == Method::GET && stats::is_tracked(path) {
+            let user_agent = headers
+                .get(header::USER_AGENT)
+                .and_then(|value| value.to_str().ok());
+            state.stats.record(Hit::Page {
+                path,
+                bot: is_bot(user_agent),
+            });
+        }
         return page.respond(&headers);
     }
     match legacy::resolve(path) {
@@ -40,6 +51,9 @@ pub(super) async fn serve(
         if snapshot.get(&with_slash).is_some() {
             return moved_permanently(&with_slash);
         }
+    }
+    if method == Method::GET {
+        state.stats.record(Hit::NotFound);
     }
     snapshot.not_found().respond(&headers)
 }
@@ -209,6 +223,30 @@ mod tests {
 
         assert_eq!(response.status, StatusCode::OK);
         assert!(response.text().contains("Aktuelle Informationen"));
+    }
+
+    /// Page views are counted per page, crawlers and errors separately, and
+    /// assets not at all.
+    #[tokio::test]
+    async fn counts_page_views() {
+        let app = TestApp::new();
+        let browser = [(
+            "user-agent",
+            "Mozilla/5.0 (X11; Linux x86_64) Firefox/145.0",
+        )];
+
+        app.get_with("/kontakt/", &browser).await;
+        app.get_with("/kontakt/", &[("user-agent", "Googlebot/2.1")])
+            .await;
+        app.get_with("/gibt-es-nicht/", &browser).await;
+        app.get_with("/robots.txt", &browser).await;
+        app.request("HEAD", "/kontakt/", &browser).await;
+
+        let today = app.state.stats.day(app.state.stats.today());
+        assert_eq!(today.views.get("/kontakt/"), Some(&1));
+        assert_eq!(today.total_views(), 1);
+        assert_eq!(today.bot_views, 1);
+        assert_eq!(today.not_found, 1);
     }
 
     /// Every response has the security headers, including errors and

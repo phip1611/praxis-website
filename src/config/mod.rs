@@ -10,6 +10,11 @@ pub(crate) use base_url::BaseUrl;
 
 use crate::cli::{DevArgs, ServeArgs};
 use std::net::SocketAddr;
+use std::path::PathBuf;
+
+/// The state directory of the development mode, relative to the working
+/// directory. Ignored by Git.
+const DEV_STATE_DIR: &str = ".dev-state";
 
 /// The validated configuration of the service.
 #[derive(Clone, Debug)]
@@ -20,6 +25,8 @@ pub(crate) struct Config {
     pub(crate) bind: SocketAddr,
     /// The public URL of the site, as seen by visitors.
     pub(crate) base_url: BaseUrl,
+    /// The directory for persistent state.
+    pub(crate) state_dir: PathBuf,
     /// The Matomo configuration, if analytics are enabled.
     pub(crate) analytics: Option<Analytics>,
 }
@@ -32,6 +39,7 @@ impl Config {
             dev: false,
             bind: args.bind,
             base_url: args.base_url,
+            state_dir: args.state_dir,
             analytics: args
                 .matomo_url
                 .zip(args.matomo_site_id)
@@ -48,6 +56,7 @@ impl Config {
             dev: true,
             bind: args.bind,
             base_url,
+            state_dir: PathBuf::from(DEV_STATE_DIR),
             analytics: None,
         }
     }
@@ -63,6 +72,7 @@ mod tests {
         ServeArgs {
             bind: DEFAULT_BIND,
             base_url: BaseUrl::parse("https://praxis.test").expect("URL should be valid"),
+            state_dir: PathBuf::from("/var/lib/praxis"),
             matomo_url: None,
             matomo_site_id: None,
         }
@@ -76,6 +86,7 @@ mod tests {
         assert!(!config.dev);
         assert_eq!(config.base_url.origin(), "https://praxis.test");
         assert!(config.bind.ip().is_loopback());
+        assert_eq!(config.state_dir, PathBuf::from("/var/lib/praxis"));
         assert!(config.analytics.is_none());
     }
 
@@ -86,6 +97,7 @@ mod tests {
 
         assert!(config.dev);
         assert_eq!(config.base_url.origin(), "http://localhost:8080");
+        assert_eq!(config.state_dir, PathBuf::from(DEV_STATE_DIR));
     }
 
     /// The URL and the site ID make up the analytics configuration.

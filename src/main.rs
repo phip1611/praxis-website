@@ -12,14 +12,17 @@
 
 mod app;
 mod cli;
+mod clock;
 mod config;
 mod content;
 mod delivery;
 mod hex;
 mod logging;
+mod persist;
 mod render;
 mod security;
 mod server;
+mod stats;
 #[cfg(test)]
 mod test_support;
 mod web;

@@ -15,7 +15,7 @@ and the Nix formatter.
 | `nix flake check` | Builds the Nix package and runs the tests                 |
 | `nix fmt`         | Formats the Nix files                                     |
 
-The dev mode needs no configuration.
+The dev mode needs no configuration and keeps its state in `.dev-state/`.
 
 CI runs rustfmt, clippy, rustdoc, the tests, typos, and `nix flake check`. The
 lints in `Cargo.toml` require docs on every item, including private ones.
@@ -37,6 +37,8 @@ encoding and checks the ETag.
 | `delivery` | Embedded assets with hashed URLs, compression, the snapshot         |
 | `web`      | Router, public and legacy routes, middleware                        |
 | `security` | All security code: headers, sanitizing, random tokens               |
+| `stats`    | Anonymous page view counters and the daily log summary              |
+| `persist`  | Atomic JSON files in the state directory                            |
 
 ## Common Changes
 
@@ -48,8 +50,8 @@ recreated by hand, including the WebP variants (`cwebp -q 80 -m 6`).
 
 **A new page:** add an entry to `pages` in `content/site.toml`, a
 `PageBody` variant in `src/content/pages.rs`, a template in `templates/pages/`, and the matching
-`when` arm in `templates/page.html`. Navigation, sitemap, and the route tests
-pick it up from `PAGES`.
+`when` arm in `templates/page.html`. Navigation, sitemap, statistics, and the
+route tests pick it up from that file.
 
 **An old URL that should redirect:** add it to `src/web/legacy.rs`. A test
 checks that every target exists.
@@ -57,7 +59,7 @@ checks that every target exists.
 ## Tests
 
 Tests use the fixtures in `src/test_support/`: `TestApp` runs the whole router
-in memory. A typical test only states the interesting steps:
+in memory with a mock clock. A typical test only states the interesting steps:
 
 ```rust
 let app = TestApp::new();
