@@ -1,0 +1,53 @@
+<table class="data-table">
+  <tbody>
+    <tr>
+      <th scope="row"><span class="visually-hidden">Name</span></th>
+      <td>{{ practice.doctor }}</td>
+    </tr>
+    <tr>
+      <th scope="row">PLZ / Ort</th>
+      <td>{{ practice.postal_code }} {{ practice.locality }}</td>
+    </tr>
+    <tr>
+      <th scope="row">Straße</th>
+      <td>{{ practice.street }}</td>
+    </tr>
+    <tr>
+      <th scope="row">E-Mail</th>
+      <td><a href="mailto:{{ practice.email }}">{{ practice.email }}</a></td>
+    </tr>
+    <tr>
+      <th scope="row">Telefon (Praxis)</th>
+      <td><a href="tel:{{ practice.phone.international }}">{{ practice.phone.display }}</a></td>
+    </tr>
+    <tr>
+      <th scope="row">Fax</th>
+      <td>{{ practice.fax.display }}</td>
+    </tr>
+    <tr>
+      <th scope="row">Telefon (Mobil)</th>
+      <td><a href="tel:{{ practice.mobile.international }}">{{ practice.mobile.display }}</a></td>
+    </tr>
+  </tbody>
+</table>
+<h2 class="subheading">Visitenkarte zum Ausdrucken/Herunterladen</h2>
+<figure class="business-card">
+  <a href="{{ card.full_png }}">
+    <picture>
+      <source
+        type="image/webp"
+        srcset="{{ card.webp_srcset }}"
+        sizes="(max-width: 700px) 90vw, 640px">
+      <img
+        src="{{ card.full_png }}"
+        srcset="{{ card.png_srcset }}"
+        sizes="(max-width: 700px) 90vw, 640px"
+        width="{{ card.width }}"
+        height="{{ card.height }}"
+        alt="{{ card.alt }}"
+        loading="lazy"
+        decoding="async">
+    </picture>
+  </a>
+  <figcaption>{{ card.caption }}</figcaption>
+</figure>

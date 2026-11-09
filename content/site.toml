@@ -84,14 +84,12 @@ caption = "Visitenkarte Arztpraxis Dirk Schuster"
 # The fixed pages, in navigation order. Paths and headings are those of the
 # WordPress site, so that search engines see the same pages. The descriptions
 # are new, and tests check that their facts match the practice data above.
-# `reading_time` tells whether WordPress announced a reading time.
 [[pages]]
 path = "/oeffnungszeiten/"
 heading = "Öffnungszeiten"
 description = """\
   Öffnungszeiten der Hausarztpraxis Dirk Schuster in Thalheim: Mo 8-12 und \
   16-18 Uhr, Di 8-10 Uhr, Mi 15-19 Uhr, Do und Fr 8-12 Uhr."""
-reading_time = false
 body = "opening-hours"
 
 [[pages]]
@@ -100,7 +98,6 @@ heading = "Kontakt"
 description = """\
   Kontakt zur Hausarztpraxis Dirk Schuster, Stadtbadstraße 1b, 09380 Thalheim: \
   Telefon 03721 39040, Fax, E-Mail und Visitenkarte."""
-reading_time = false
 body = "contact"
 
 [[pages]]
@@ -110,7 +107,6 @@ description = """\
   Anfahrt zur Hausarztpraxis Dirk Schuster in der Stadtbadstraße 1b in \
   Thalheim: Zugang ohne Treppen, auch für Rollstuhlfahrer, und Parkplätze im \
   Hof."""
-reading_time = true
 body = "directions"
 
 [[pages]]
@@ -120,7 +116,6 @@ description = """\
   Impressum der Hausarztpraxis Dipl.-Med. Dirk Schuster in \
   Thalheim/Erzgebirge: Angaben gemäß § 5 DDG, Aufsichtsbehörde, Kammer und \
   berufsrechtliche Regelungen."""
-reading_time = true
 body = "imprint"
 
 [[pages]]
@@ -128,5 +123,4 @@ path = "/datenschutz/"
 heading = "Datenschutz"
 description = """\
   Datenschutzhinweise der Hausarztpraxis Dirk Schuster in Thalheim."""
-reading_time = true
 body = "privacy"

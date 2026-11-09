@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+  <article class="entry">
+    <h1 class="entry-title">{{ page.heading }}</h1>
+    <div class="entry-content">
+      {%- match page.body %}
+        {%- when PageBody::OpeningHours %}{% include "pages/oeffnungszeiten.html" %}
+        {%- when PageBody::Contact %}{% include "pages/kontakt.html" %}
+        {%- when PageBody::Directions %}{% include "pages/anfahrt.html" %}
+        {%- when PageBody::Imprint %}{% include "pages/impressum.html" %}
+        {%- when PageBody::Privacy %}{% include "pages/datenschutz.html" %}
+      {%- endmatch %}
+    </div>
+  </article>
+{% endblock %}

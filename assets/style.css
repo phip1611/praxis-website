@@ -1,0 +1,324 @@
+/*
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ *
+ * The only stylesheet of the site.
+ *
+ * It follows the look of the previous WordPress theme ("Arke"): a narrow
+ * white column, plain sans-serif text, and a right-aligned menu. Measurements
+ * in comments marked "as before" come from that theme. Colors are darker than
+ * before where the old ones failed the WCAG AA contrast ratio of 4.5:1.
+ *
+ * Font sizes use rem, so that they follow the reader's browser setting; at the
+ * default of 16px, 1rem matches the old pixel sizes. Spacing that belongs to
+ * the layout stays in px.
+ */
+
+/* Design tokens. Change colors here only. */
+:root {
+  color-scheme: light;
+  --color-text: #2f2f2f;
+  --color-heading: #060606;
+  --color-site-title: #2d2e33;
+  /* Secondary text: notes, captions, footer. 7:1 on white. */
+  --color-muted: #595959;
+  --color-line: #ccc;
+  --color-link: #1f4fa3;
+  /* The old menu blue #4d97ff had 2.9:1; this similar blue has 5.4:1. */
+  --color-nav-link: #1a66d6;
+  /* Current menu entry and hover, as before. */
+  --color-nav-current: #b30059;
+  --color-hover: #800040;
+  /* Highlighted words in the news. Old #ff0000 had 4.0:1, this has 5.7:1. */
+  --color-red: #d00000;
+  --font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* Sizes include padding and border, which makes widths predictable. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Stops mobile browsers from enlarging text in landscape on their own. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/*
+ * The page column. 640px of text plus 5% padding on each side, as before.
+ * `content-box` keeps the padding outside of the 640px, like the old theme.
+ */
+body {
+  box-sizing: content-box;
+  max-inline-size: 640px;
+  margin: 0 auto;
+  padding-inline: 5%;
+  background: #fff;
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: 1rem;
+  line-height: 1.7;
+  overflow-wrap: break-word;
+}
+
+/* Links in running text. Underlined, so they don't rely on color alone. */
+a {
+  color: var(--color-link);
+}
+
+/* Same feedback for mouse and keyboard users. */
+a:hover,
+a:focus {
+  color: var(--color-hover);
+}
+
+/* A visible focus ring for keyboard users only; the old theme had none. */
+:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+
+/* Darker than body text, as before. */
+h1,
+h2,
+h3 {
+  color: var(--color-heading);
+  line-height: 1.25;
+}
+
+/* Separators in the news, as before: a thin gray line. */
+hr {
+  margin: 0 0 1.5em;
+  border: 0;
+  border-block-start: 1px solid var(--color-line);
+}
+
+/* Images never overflow the column on small screens. */
+img {
+  max-inline-size: 100%;
+  block-size: auto;
+}
+
+/* Text for screen readers only, e.g., the hidden "Name" table header. */
+.visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* "Zum Inhalt springen": off-screen until a keyboard user tabs to it. */
+.skip-link {
+  position: absolute;
+  inset-inline-start: -9999px;
+}
+
+/* Shown in the top left corner while focused. */
+.skip-link:focus {
+  inset-block-start: 1em;
+  inset-inline-start: 1em;
+  z-index: 1;
+  padding: 0.5em 1em;
+  background: #fff;
+}
+
+/* ----- Header: site name, tagline, and menu ----- */
+
+/* Name and menu wrap below each other; spacing as before. */
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding-block: 25px 50px;
+}
+
+/* Full width, so that the tagline can align right below the name. */
+.site-branding {
+  inline-size: 100%;
+  padding-block-start: 20px;
+}
+
+/* The site name: bold uppercase, as before. Also the h1 on the start page. */
+.site-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* The name links to the start page, but shouldn't look like a link. */
+.site-title a {
+  color: var(--color-site-title);
+  text-decoration: none;
+}
+
+/* "– Dipl.-Med. Dirk Schuster in Thalheim", right-aligned as before. */
+.site-tagline {
+  margin: 0.4em 0 0;
+  font-weight: bold;
+  text-align: end;
+}
+
+/* The main menu spans the column, so it can align right. */
+.site-nav {
+  inline-size: 100%;
+  font-size: 0.9375rem;
+  line-height: 1;
+}
+
+/* A plain row of links that wraps on narrow screens; 30px gaps as before. */
+.site-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0 30px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The padding makes the links big enough to tap (WCAG 2.5.8). */
+.site-nav a {
+  display: block;
+  padding-block: 20px;
+  color: var(--color-nav-link);
+  text-decoration: none;
+}
+
+/* Marks the page the visitor is on. */
+.site-nav a[aria-current="page"] {
+  color: var(--color-nav-current);
+}
+
+/* Higher specificity than the current page, so hover always shows. */
+.site-nav a:hover,
+.site-nav a:focus {
+  color: var(--color-hover);
+}
+
+/* Phones: menu starts on the left, where the thumb reaches it, and is denser. */
+@media (max-width: 600px) {
+  .site-header {
+    padding-block-end: 30px;
+  }
+
+  .site-nav ul {
+    justify-content: flex-start;
+    gap: 0 24px;
+  }
+
+  .site-nav a {
+    padding-block: 14px;
+  }
+}
+
+/* ----- Content ----- */
+
+/* Space between the content and the footer, as before. */
+.site-content {
+  margin-block-end: 50px;
+}
+
+/* Page headings: h1 on pages, h2 for the news on the start page. */
+.entry-title {
+  margin: 0 0 1em;
+  font-size: 1.875rem;
+}
+
+/* Section headings inside pages. Small, as the h4 of the old theme was. */
+.subheading {
+  font-size: 1.1em;
+}
+
+/* Empty paragraphs in the news would add unexpected gaps. */
+.entry-content p:empty {
+  display: none;
+}
+
+/* Centered news text. The CSP forbids inline styles, hence a class. */
+.text-center {
+  text-align: center;
+}
+
+/* Red news text, for warnings such as closing days. */
+.text-red {
+  color: var(--color-red);
+}
+
+/* Opening hours and contact data: smaller, as before. */
+.data-table {
+  inline-size: 100%;
+  margin: 0 0 1.5em;
+  border-collapse: collapse;
+  font-family: sans-serif;
+  font-size: 0.875rem;
+}
+
+/* Headers look like cells, as before; the markup still marks them up. */
+.data-table th,
+.data-table td {
+  padding: 10px 10px 0;
+  font-weight: normal;
+  text-align: start;
+  vertical-align: top;
+}
+
+/* The business card on the contact page. */
+.business-card {
+  margin: 0 0 1.5em;
+}
+
+/*
+ * The link box wraps the whole image, so the focus ring surrounds it and
+ * browsers scroll all of it into view. As an inline box, it was only the
+ * text line below the image.
+ */
+.business-card a {
+  display: inline-block;
+}
+
+/* Removes the gap below the image that inline images leave for descenders. */
+.business-card img {
+  display: block;
+}
+
+/* The caption below the business card, as before. */
+.business-card figcaption {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* ----- Footer: address and phone on every page ----- */
+
+/* Separated by a line, unobtrusive like a letterhead footer. */
+.site-footer {
+  margin-block-end: 40px;
+  padding-block-start: 1em;
+  border-block-start: 1px solid var(--color-line);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* A single line of text, so no paragraph margins. */
+.site-footer p {
+  margin: 0;
+}
+
+/* Printing, e.g., the opening hours: no menu, and links in text color. */
+@media print {
+  .site-nav,
+  .skip-link {
+    display: none;
+  }
+
+  a {
+    color: inherit;
+  }
+}
