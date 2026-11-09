@@ -2,10 +2,11 @@
 
 The website of the general practice Dipl.-Med. Dirk Schuster in
 Thalheim/Erzgebirge ([praxis-dirkschuster.de][site]): a small Rust service
-that replaces the previous WordPress site.
+that replaces the previous WordPress site, with a login area to edit the news
+on the start page.
 
 ```sh
-cargo dev   # http://localhost:8080
+cargo dev   # http://localhost:8080, login: admin / admin
 ```
 
 - [Developer guide](docs/developer.md): architecture, local development, and

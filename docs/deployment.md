@@ -3,25 +3,41 @@
 How to run the service in production.
 
 The service speaks plain HTTP on localhost and expects a reverse proxy on the
-same host that terminates TLS.
+same host that terminates TLS. Logins are limited per client (5 failures per
+15 minutes, if the proxy reports the client address), per account (20), and
+globally (600 password checks per minute).
 
 ## Configuration
 
 Run the binary with these environment variables (or the flags of
-`praxis-website --help`), ideally as a systemd service with `DynamicUser=`
-and `StateDirectory=`.
+`praxis-website --help`), ideally as a systemd service with `DynamicUser=`,
+`StateDirectory=`, and `LoadCredential=accounts:<file>`.
 
-| Variable                | Default                  | Purpose                           |
-|-------------------------|--------------------------|-----------------------------------|
-| `PRAXIS_BASE_URL`       | required                 | Public URL for canonical links    |
-| `PRAXIS_BIND`           | `127.0.0.1:8080`         | Listen address                    |
-| `STATE_DIRECTORY`       | required, set by systemd | Where the state files live        |
-| `PRAXIS_MATOMO_URL`     | off                      | Matomo installation for analytics |
-| `PRAXIS_MATOMO_SITE_ID` | off                      | Matomo site ID                    |
-| `RUST_LOG`              | `info`                   | Log filter, e.g., `debug`         |
+| Variable                  | Default                           | Purpose                                                    |
+|---------------------------|-----------------------------------|------------------------------------------------------------|
+| `PRAXIS_BASE_URL`         | required                          | Public URL for canonical links, cookies, and origin checks |
+| `PRAXIS_BIND`             | `127.0.0.1:8080`                  | Listen address                                             |
+| `STATE_DIRECTORY`         | required, set by systemd          | Where the state files live                                 |
+| `PRAXIS_ACCOUNTS_FILE`    | required                          | The accounts file                                          |
+| `PRAXIS_CLIENT_IP_HEADER` | off                               | Proxy header with the client address                       |
+| `PRAXIS_MATOMO_URL`       | off                               | Matomo installation for analytics                          |
+| `PRAXIS_MATOMO_SITE_ID`   | off                               | Matomo site ID                                             |
+| `RUST_LOG`                | `info`                            | Log filter, e.g., `debug`                                  |
+
+Only set `PRAXIS_CLIENT_IP_HEADER` if the proxy overwrites that header, as
+nginx does with `proxy_set_header X-Real-IP $remote_addr`. Otherwise,
+clients could set it themselves and get other clients blocked.
 
 The service sends its own security headers and precompressed responses, so
 the proxy needs no extra headers or compression settings.
+
+## Accounts
+
+The accounts file has one `username:hash` line per account. The hash is
+created with `praxis-website hash-password <username>`, also to change a
+password. Changes take effect on the next start of the service, which logs
+out everyone. Leaked hashes are fine: Argon2id and the 15-character minimum
+make them practically uncrackable.
 
 ## State
 
@@ -43,6 +59,9 @@ journalctl -u praxis-website -p warning    # Only problems
 journalctl -u praxis-website -g 'access statistics'  # Daily summaries
 ```
 
-The log has one line per request (method, path, status, duration), and after
-each day a summary of the access statistics. Client addresses are never
-logged or stored.
+The log has one line per request (method, path, status, duration), logins,
+and after each day a summary of the access statistics. Client addresses are
+never logged or stored. After failed logins, the service keeps a pseudonym
+of the client address in memory, for at most 16 minutes after the last
+failure. The detailed statistics are at `/admin/statistik/` after logging
+in.

@@ -64,10 +64,74 @@ pub(super) struct NotFoundTemplate<'a> {
     pub(super) layout: &'a Layout,
 }
 
+/// The login form.
+#[derive(Debug, Template)]
+#[template(path = "admin/login.html")]
+pub(super) struct LoginTemplate<'a> {
+    /// The page frame.
+    pub(super) layout: &'a Layout,
+    /// The username to prefill after a failed login.
+    pub(super) username: &'a str,
+    /// The error message, if any.
+    pub(super) error: Option<&'a str>,
+    /// The length limit of the username field.
+    pub(super) max_username: usize,
+    /// The length limit of the password field.
+    pub(super) max_password: usize,
+}
+
 /// The XML sitemap.
 #[derive(Debug, Template)]
 #[template(path = "seo/sitemap.xml")]
 pub(super) struct SitemapTemplate<'a> {
     /// The URLs.
     pub(super) entries: &'a [SitemapEntry],
+}
+
+/// One day in the access statistics.
+#[derive(Debug)]
+pub(super) struct StatsDayRow {
+    /// The date, e.g., `Sa, 07.11.2026`.
+    pub(super) date: String,
+    /// The views by people.
+    pub(super) views: u64,
+    /// The views by crawlers.
+    pub(super) bot_views: u64,
+    /// The requests to unknown paths.
+    pub(super) not_found: u64,
+}
+
+/// One page in the access statistics.
+#[derive(Debug)]
+pub(super) struct StatsPageRow {
+    /// The name of the page.
+    pub(super) label: &'static str,
+    /// The path of the page.
+    pub(super) path: &'static str,
+    /// The views by people in the period.
+    pub(super) views: u64,
+}
+
+/// The access statistics.
+#[derive(Debug, Template)]
+#[template(path = "admin/stats.html")]
+pub(super) struct StatsTemplate<'a> {
+    /// The page frame.
+    pub(super) layout: &'a Layout,
+    /// The logged-in account.
+    pub(super) username: &'a str,
+    /// The CSRF token of the session, for logging out.
+    pub(super) csrf: &'a str,
+    /// The number of days shown.
+    pub(super) period_days: usize,
+    /// The views by people in the period.
+    pub(super) total_views: u64,
+    /// The views by crawlers in the period.
+    pub(super) total_bot_views: u64,
+    /// The highest daily views, the scale of the bars.
+    pub(super) max_views: u64,
+    /// The days, newest first.
+    pub(super) days: &'a [StatsDayRow],
+    /// The pages, in navigation order.
+    pub(super) pages: &'a [StatsPageRow],
 }

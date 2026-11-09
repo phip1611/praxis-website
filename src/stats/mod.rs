@@ -171,6 +171,19 @@ impl AccessStats {
             .unwrap_or_default()
     }
 
+    /// Returns the counters of the last `days` days including today, newest
+    /// first. Days without requests are included with zero counters.
+    pub(crate) fn recent(&self, days: i32) -> Vec<(Date, DayStats)> {
+        let today = self.today();
+        let counters = self.counters.lock().unwrap();
+        (0..days)
+            .map(|offset| {
+                let date = today - offset.days();
+                (date, counters.days.get(&date).cloned().unwrap_or_default())
+            })
+            .collect()
+    }
+
     /// Writes the statistics to disk if they changed since the last write.
     ///
     /// # Errors
@@ -249,6 +262,21 @@ mod tests {
 
         assert_eq!(stats.day(yesterday).total_views(), 1);
         assert_eq!(stats.day(stats.today()).total_views(), 2);
+    }
+
+    /// `recent` fills days without requests, newest first.
+    #[test]
+    fn recent_includes_empty_days() {
+        let (_dir, clock, stats) = stats();
+        stats.record(view("/"));
+        clock.advance(SignedDuration::from_hours(48));
+
+        let recent = stats.recent(3);
+
+        assert_eq!(recent.len(), 3);
+        assert_eq!(recent[0].0, stats.today());
+        assert_eq!(recent[1].1.total_views(), 0);
+        assert_eq!(recent[2].1.total_views(), 1);
     }
 
     /// Old days are dropped, so the file doesn't grow forever.

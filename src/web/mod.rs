@@ -2,7 +2,9 @@
 
 //! The HTTP interface.
 
+pub(crate) mod admin;
 mod dev;
+mod error;
 mod legacy;
 mod middleware;
 mod public;
@@ -11,9 +13,11 @@ use crate::app::AppState;
 use axum::Router;
 use axum::middleware::{from_fn, from_fn_with_state};
 
+use error::AppError;
+
 /// Builds the router with all routes and middleware.
 pub(crate) fn router(state: AppState) -> Router {
-    let mut router = Router::new();
+    let mut router = Router::new().merge(admin::routes());
     if state.config.dev {
         router = router.merge(dev::routes());
     }

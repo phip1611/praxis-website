@@ -62,8 +62,8 @@ impl SecurityHeaders {
     /// styles, which the policy would break.
     ///
     /// Other sites may embed the public files, such as the business card or
-    /// the logo, as the WordPress site allowed. HTML documents stay
-    /// limited to this origin.
+    /// the logo, as the WordPress site allowed. HTML documents, which
+    /// include the login area, stay limited to this origin.
     pub(crate) fn apply(&self, headers: &mut HeaderMap) {
         for (name, value) in STATIC_HEADERS {
             headers.insert(name, HeaderValue::from_static(value));

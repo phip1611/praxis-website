@@ -7,6 +7,7 @@
 //! by [`crate::delivery::assets`].
 
 use crate::content::pages::{HOME_PATH, SITEMAP_PATH};
+use crate::web::admin::LOGIN_PATH;
 
 /// What happens with an old URL.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -18,7 +19,7 @@ pub(super) enum LegacyTarget {
 }
 
 /// Old paths and their new location.
-const REDIRECTS: [(&str, &str); 12] = [
+const REDIRECTS: [(&str, &str); 15] = [
     // The news was a WordPress post; it lives on the start page now.
     ("/2026/10/aktuelle-informationen/", HOME_PATH),
     ("/category/aktuelles/", HOME_PATH),
@@ -37,6 +38,10 @@ const REDIRECTS: [(&str, &str); 12] = [
     ("/page-sitemap.xml", SITEMAP_PATH),
     ("/attachment-sitemap.xml", SITEMAP_PATH),
     ("/wp-sitemap.xml", SITEMAP_PATH),
+    // Bookmarks of the old login.
+    ("/wp-admin/", LOGIN_PATH),
+    ("/wp-login.php", LOGIN_PATH),
+    ("/admin", LOGIN_PATH),
 ];
 
 /// Old paths of content that was removed on purpose.
@@ -107,8 +112,8 @@ mod tests {
     fn files_match_exactly() {
         assert_eq!(resolve("/sitemap_index.xml/"), None);
         assert_eq!(
-            resolve("/sitemap_index.xml"),
-            Some(LegacyTarget::Moved(SITEMAP_PATH))
+            resolve("/wp-login.php"),
+            Some(LegacyTarget::Moved("/admin/login/"))
         );
     }
 
@@ -141,7 +146,11 @@ mod tests {
             let status = app.get(target).await.status;
 
             assert_eq!(resolve(target), None, "{target}");
-            assert_eq!(status, StatusCode::OK, "{target}");
+            // The login area answers with a redirect to its login form.
+            assert!(
+                status == StatusCode::OK || status == StatusCode::SEE_OTHER,
+                "{target}"
+            );
         }
     }
 }
