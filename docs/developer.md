@@ -29,17 +29,19 @@ features and list the ones the code needs.
 Public pages never run templates per request. At startup and after each edit,
 `render` produces every page and the sitemap, and `delivery`
 compresses them (Brotli, gzip) into an immutable snapshot. A request only
-negotiates the encoding and checks the ETag.
+negotiates the encoding and checks the ETag. The files in `assets/` are
+embedded into the binary, after `build.rs` minified the stylesheet and the
+scripts.
 
-| Module     | Responsibility                                                                |
-|------------|-------------------------------------------------------------------------------|
-| `content`  | Practice data, the page table with paths and metadata, and the editable news  |
-| `render`   | askama templates, page frame, JSON-LD, sitemap                                |
-| `delivery` | Embedded assets with hashed URLs, compression, the snapshot                   |
-| `web`      | Router, public and legacy routes, login area, middleware                      |
-| `security` | All security code: passwords, sessions, CSRF, throttling, headers, sanitizing |
-| `stats`    | Anonymous page view counters and the daily log summary                        |
-| `persist`  | Atomic JSON files in the state directory                                      |
+| Module     | Responsibility                                                                 |
+|------------|--------------------------------------------------------------------------------|
+| `content`  | Practice data, the page table with paths and metadata, and the editable news   |
+| `render`   | askama templates, page frame, JSON-LD, sitemap                                 |
+| `delivery` | Embedded assets with hashed URLs, compression, the snapshot                    |
+| `web`      | Router, public and legacy routes, login area, middleware                       |
+| `security` | All security code: passwords, sessions, CSRF, throttling, headers, sanitizing  |
+| `stats`    | Anonymous counters of page views, devices, and browsers, the daily log summary |
+| `persist`  | Atomic JSON files in the state directory                                       |
 
 State-changing handlers take `SessionForm` or `SameOriginForm` from
 `web::admin::forms`, which apply the origin and CSRF checks.
@@ -51,6 +53,10 @@ The page descriptions in that file repeat some of these facts;
 tests fail until they match. The business card
 (`assets/images/Visitenkarte-*`) is an image with the same facts and has to be
 recreated by hand, including the WebP variants (`cwebp -q 80 -m 6`).
+
+**A new or changed PNG image:** compress it losslessly with
+`nix run nixpkgs#oxipng -- -o 4 --strip safe <file>`. This keeps the pixels
+and removes metadata that doesn't affect the display.
 
 **A new page:** add an entry to `pages` in `content/site.toml`, a
 `PageBody` variant in `src/content/pages.rs`, a template in `templates/pages/`, and the matching

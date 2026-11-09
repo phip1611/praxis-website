@@ -280,6 +280,46 @@ mod tests {
         );
     }
 
+    /// Every public page names its URL under the base URL as canonical, also
+    /// for requests with `www.`, without trailing slash, or with a query
+    /// string. Open Graph uses the same URL.
+    #[test]
+    fn public_pages_have_canonical_url() {
+        let renderer = renderer();
+        let home = renderer
+            .render_home(&NewsDocument::seed())
+            .expect("rendering should succeed");
+        let pages = SITE.pages.iter().map(|page| {
+            let html = renderer
+                .render_page(page)
+                .expect("rendering should succeed");
+            (page.path.as_str(), html)
+        });
+
+        for (path, html) in iter::once((HOME_PATH, home)).chain(pages) {
+            let url = format!("https://praxis.test{path}");
+            assert!(
+                html.contains(&format!(r#"<link rel="canonical" href="{url}">"#)),
+                "{path}"
+            );
+            assert!(
+                html.contains(&format!(r#"<meta property="og:url" content="{url}">"#)),
+                "{path}"
+            );
+        }
+    }
+
+    /// The error page has no canonical URL, as it isn't a page of its own.
+    #[test]
+    fn not_found_page_has_no_canonical_url() {
+        let html = renderer()
+            .render_not_found()
+            .expect("rendering should succeed");
+
+        assert!(!html.contains("rel=\"canonical\""));
+        assert!(html.contains(r#"<meta name="robots" content="noindex, nofollow">"#));
+    }
+
     /// Text in the structured data can't close its `<script>` element, as
     /// the `json` filter escapes `<`.
     #[test]

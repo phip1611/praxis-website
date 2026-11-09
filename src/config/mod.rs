@@ -45,6 +45,8 @@ pub(crate) struct Config {
     pub(crate) allowed_origins: Vec<String>,
     /// The header with the client address from the reverse proxy, if trusted.
     pub(crate) client_ip_header: Option<HeaderName>,
+    /// Whether search engines must not index the site.
+    pub(crate) noindex: bool,
 }
 
 impl Config {
@@ -65,6 +67,7 @@ impl Config {
                 .map(|(url, site_id)| Analytics::new(url, site_id)),
             allowed_origins,
             client_ip_header: args.client_ip_header,
+            noindex: args.noindex,
         }
     }
 
@@ -87,6 +90,7 @@ impl Config {
             analytics: None,
             allowed_origins,
             client_ip_header: None,
+            noindex: false,
         }
     }
 }
@@ -106,6 +110,7 @@ mod tests {
             matomo_url: None,
             matomo_site_id: None,
             client_ip_header: None,
+            noindex: false,
         }
     }
 

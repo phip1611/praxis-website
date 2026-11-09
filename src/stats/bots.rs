@@ -29,7 +29,7 @@ const BOT_MARKERS: [&str; 15] = [
 ///
 /// Requests without user agent count as automated, as browsers always send
 /// one.
-pub(crate) fn is_bot(user_agent: Option<&str>) -> bool {
+pub(super) fn is_bot(user_agent: Option<&str>) -> bool {
     let Some(user_agent) = user_agent.filter(|ua| !ua.trim().is_empty()) else {
         return true;
     };

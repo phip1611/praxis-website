@@ -9,16 +9,19 @@ use crate::delivery::assets;
 use crate::render::layout::Layout;
 use crate::render::templates::{
     EditorTemplate, LoginTemplate, Notice, PasswordTemplate, StatsDayRow, StatsPageRow,
-    StatsTemplate,
+    StatsShareRow, StatsShareTable, StatsTemplate,
 };
 use crate::render::{RenderError, SiteRenderer};
 use crate::security::credentials::MAX_USERNAME_BYTES;
 use crate::security::password::{MAX_PASSWORD_BYTES, MIN_PASSWORD_CHARS};
 use crate::security::sanitize::SanitizedHtml;
+use crate::stats::clients::Category;
 use crate::stats::{DayStats, tracked_pages};
 use askama::Template;
 use jiff::Timestamp;
 use jiff::civil::{Date, Weekday};
+use std::cmp::Reverse;
+use std::collections::BTreeMap;
 
 /// What the editor shows.
 #[derive(Debug)]
@@ -138,6 +141,13 @@ impl SiteRenderer {
                 views: days.iter().filter_map(|(_, day)| day.views.get(path)).sum(),
             })
             .collect();
+        let clients = [
+            share_table("Nach Gerät", "Gerät", days, |day| &day.devices),
+            share_table("Nach Browser", "Browser", days, |day| &day.browsers),
+            share_table("Nach Betriebssystem", "Betriebssystem", days, |day| {
+                &day.systems
+            }),
+        ];
         let layout = self.private_layout("Zugriffsstatistik", Vec::new());
         Ok(StatsTemplate {
             layout: &layout,
@@ -150,8 +160,45 @@ impl SiteRenderer {
             max_views: rows.iter().map(|row| row.views).max().unwrap_or(0).max(1),
             days: &rows,
             pages: &pages,
+            clients: &clients,
         }
         .render()?)
+    }
+}
+
+/// Sums the views of `days` per value of one visitor property, which
+/// `counts` selects, e.g., the browser.
+fn share_table<C: Category>(
+    heading: &'static str,
+    column: &'static str,
+    days: &[(Date, DayStats)],
+    counts: impl Fn(&DayStats) -> &BTreeMap<C, u64>,
+) -> StatsShareTable {
+    let mut views: Vec<_> = C::ALL
+        .iter()
+        .map(|value| {
+            let sum = days
+                .iter()
+                .filter_map(|(_, day)| counts(day).get(value))
+                .sum::<u64>();
+            (value.label(), sum)
+        })
+        .collect();
+    // Stable, so equal counts keep the order of `ALL`.
+    views.sort_by_key(|&(_, views)| Reverse(views));
+    let total: u64 = views.iter().map(|&(_, views)| views).sum();
+    let rows = views
+        .into_iter()
+        .map(|(label, views)| StatsShareRow {
+            label,
+            views,
+            percent: (views * 100 + total / 2).checked_div(total).unwrap_or(0),
+        })
+        .collect();
+    StatsShareTable {
+        heading,
+        column,
+        rows,
     }
 }
 

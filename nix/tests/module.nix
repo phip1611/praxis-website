@@ -1,6 +1,11 @@
 # VM test of the NixOS module: the hardened service starts, serves pages,
-# accepts a login and an edit, and keeps the edit across restarts.
+# accepts a login and an edit, and keeps the edit across restarts. A second
+# machine runs a test instance that search engines must not index.
 
+let
+  # The password is "correct horse battery staple".
+  account = "$argon2id$v=19$m=19456,t=2,p=1$uNOFUfQlmLHNoWgYsJDyYw$2wlK3UWEKzL3jn8L4o0AlqLEBW3exlpbu+j1XIZiSMQ";
+in
 {
   name = "praxis-website";
 
@@ -13,12 +18,27 @@
         enable = true;
         baseUrl = "https://praxis.test";
         port = 8028;
-        # The password is "correct horse battery staple".
-        accounts.e2e = "$argon2id$v=19$m=19456,t=2,p=1$uNOFUfQlmLHNoWgYsJDyYw$2wlK3UWEKzL3jn8L4o0AlqLEBW3exlpbu+j1XIZiSMQ";
+        accounts.e2e = account;
         clientIpHeader = "X-Real-IP";
       };
 
       time.timeZone = "Asia/Tokyo";
+
+      environment.systemPackages = [ pkgs.curl ];
+    };
+
+  nodes.hidden =
+    { pkgs, ... }:
+    {
+      imports = [ ../module.nix ];
+
+      services.praxis-website = {
+        enable = true;
+        baseUrl = "https://test.praxis.test";
+        port = 8028;
+        accounts.e2e = account;
+        noindex = true;
+      };
 
       environment.systemPackages = [ pkgs.curl ];
     };
@@ -43,6 +63,14 @@
         assert "Stadtbadstraße 1b" in machine.succeed(f"curl -sf {base}/kontakt/")
         headers = machine.succeed(f"curl -sf -o /dev/null -D - -H 'Accept-Encoding: br' {base}/")
         assert "content-encoding: br" in headers.lower(), headers
+
+    with subtest("only the test instance asks search engines to skip it"):
+        hidden.wait_for_unit("praxis-website.service", timeout=60)
+        hidden.wait_for_open_port(8028)
+        headers = hidden.succeed(f"curl -sf -o /dev/null -D - {base}/")
+        assert "x-robots-tag: noindex, nofollow" in headers.lower(), headers
+        headers = machine.succeed(f"curl -sf -o /dev/null -D - {base}/")
+        assert "x-robots-tag" not in headers.lower(), headers
 
     with subtest("the hardening is effective"):
         # Fails if the exposure level is above 1.0 (currently 0.9).

@@ -112,7 +112,7 @@ impl TestApp {
     }
 
     /// Creates the service with `config`.
-    fn with_config(mut config: Config) -> Self {
+    pub(crate) fn with_config(mut config: Config) -> Self {
         let state_dir = TempDir::new().expect("temp dir should be created");
         config.state_dir = state_dir.path().to_path_buf();
         let clock = Arc::new(MockClock::default());
