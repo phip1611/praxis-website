@@ -1,0 +1,64 @@
+[package]
+name = "praxis-website"
+description = """
+Website of the general practice Dipl.-Med. Dirk Schuster in Thalheim/Erzgebirge
+with a small login area to edit the current information on the start page.
+"""
+version = "0.1.0"
+edition = "2024"
+keywords = ["website", "axum", "askama"]
+categories = ["web-programming::http-server"]
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+homepage = "https://praxis-dirkschuster.de"
+repository = "https://github.com/phip1611/praxis-website"
+authors = [
+  "Philipp Schuster <phip1611@gmail.com>",
+]
+publish = false
+rust-version = "1.97"
+resolver = "3"
+
+[dependencies]
+clap = { version = "4.6", default-features = false, features = ["color", "derive", "env", "error-context", "help", "std", "suggestions", "usage"] }
+thiserror = { version = "2.0", default-features = false, features = ["std"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["ansi", "env-filter", "fmt", "std"] }
+url = { version = "2.5", default-features = false, features = ["std"] }
+
+[lints.rust]
+missing_debug_implementations = "deny"
+unreachable_pub = "deny"
+
+[lints.rustdoc]
+all = { level = "deny", priority = -1 }
+
+# Groups first (lower priority), so that the single lints below override them.
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+cargo = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+absolute_paths = "deny"
+as_ptr_cast_mut = "deny"
+assertions_on_result_states = "deny"
+cast_ptr_alignment = "deny"
+clone_on_ref_ptr = "deny"
+if_not_else = "deny"
+literal_string_with_formatting_args = "deny"
+manual_string_new = "deny"
+map_unwrap_or = "deny"
+missing_docs_in_private_items = "deny"
+must_use_candidate = "deny"
+needless_pass_by_value = "deny"
+panic = "deny"
+ptr_cast_constness = "deny"
+redundant_else = "deny"
+return_self_not_must_use = "deny"
+semicolon_if_nothing_returned = "deny"
+undocumented_unsafe_blocks = "deny"
+uninlined_format_args = "deny"
+unnecessary_semicolon = "deny"
+# Caused by dependencies, which this crate can't fix.
+multiple_crate_versions = "allow"
+# Contradicts `unreachable_pub`, which wants `pub(crate)` in a binary crate.
+redundant_pub_crate = "allow"
+

@@ -1,0 +1,2 @@
+# Tests may panic, e.g., in fixtures that can't fail.
+allow-panic-in-tests = true
